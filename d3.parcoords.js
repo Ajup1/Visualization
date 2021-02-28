@@ -2527,3 +2527,8 @@ d3.renderQueue = (function(func) {
 
   return rq;
 });
+
+d3.selectAll('.tick')
+    .on('click',clickMe)
+
+function clickMe(){alert("I've been clicked!")}

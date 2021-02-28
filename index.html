@@ -64,6 +64,7 @@ body, html {
 
 </style>
 <H1> COVID </H1>
+<button id="reset" style="display: none;">Reset</button>
 <script src="d3.min.js"></script>
 <script src="d3.parcoords.js"></script>
 <script src="examples/lib/divgrid.js"></script>
@@ -81,6 +82,11 @@ body, html {
 </div>
 <div id="pager"></div>
 <script>
+
+var data;
+var contents;
+var filterdFlag = false;
+
 var parcoords = d3.parcoords()("#example")
   .alpha(0.4)
   .mode("queue") // progressive rendering
@@ -93,21 +99,34 @@ var parcoords = d3.parcoords()("#example")
   });
 
 // create chart from loaded data
-function parallelCoordinates(data) {
+function parallelCoordinates(data, countryName) {
   // slickgrid needs each data element to have an i
 
   data.forEach(function(d,i) { d.id = d.id || i; });
-  parcoords
+  var hiddenAxes;
+  if(countryName) {
+    hiddenAxes = ["Country", "id","USA State","Date"]
+    parcoords
     .data(data)
-    .hideAxis(["CountryName","id","USA State","Date"])
+    .hideAxis(hiddenAxes)
     .render()
     .composite("darken")
     .reorderable()
     .brushMode("1D-axes");
-    // Color scale: give me a specie name, I return a color
-  
-   
+  }
+  else {
+    hiddenAxes = ["CountryName", "id","USA State","Date"]
+    parcoords
+    .data(data)
+    .hideAxis(hiddenAxes)
+    .render()
+    .composite("darken")
+    .reorderable()
+    .brushMode("1D-axes");
+  }
 
+  
+    // Color scale: give me a specie name, I return a color
   parcoords.color(function(d) {
    
        if (d.Country == 'A')
@@ -245,6 +264,44 @@ function comparer(a, b) {
     dataView.endUpdate();
   };
 
+
+  // From here my
+
+  document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
+
+  allTicks = document.querySelectorAll(".tick text");
+  for (var i = 0, max=allTicks.length; i < max; i++) {
+    allTicks[i].addEventListener("click", onClickTick);
+  }
+
+  function resetSelectedCountryAlphabet() {
+    if(filterdFlag) {
+      data = d3.csv.parse(contents);
+      parallelCoordinates(data, false);
+      parcoords.updateAxes();
+      filterdFlag = false;
+      document.getElementById("reset").style.display = "hidden";
+    }
+    
+  }
+
+
+  function onClickTick() {
+    console.log("This is the one clicked:", this.innerHTML, (/[a-zA-Z]/).test(this.innerHTML));
+  
+    var innerLabel = this.innerHTML;
+    if((/[a-zA-Z]/).test(innerLabel)) {
+      data = d3.csv.parse(contents);
+      dataToFilter = data;
+      console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
+      parallelCoordinates(dataToFilter.filter(d => d.Country === innerLabel), true);
+      parcoords.updateAxes();
+    }
+    filterdFlag = true;
+    console.log(document.getElementById("reset"));
+    document.getElementById("reset").style.display = "block";
+    
+  }
 };
 
 // CSV Uploader
@@ -252,10 +309,10 @@ var uploader = document.getElementById("uploader");
 var reader = new FileReader();
 
 reader.onload = function(e) {
-  var contents = e.target.result;
-  var data = d3.csv.parse(contents);
-  parallelCoordinates(data);
-
+  contents = e.target.result;
+  data = d3.csv.parse(contents);
+  console.log("Data", data);
+  parallelCoordinates(data, false);
   // remove button, since re-initializing doesn't work for now
   uploader.parentNode.removeChild(uploader);
 };
@@ -399,6 +456,9 @@ function highlightLineOnClick(mouseClick, drawTooltip){
 
   }
 };
+
+
+
 
 </script>
 
