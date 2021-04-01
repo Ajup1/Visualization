@@ -116,7 +116,6 @@ var side_effects = d3.dispatch.apply(this,d3.keys(__))
   .on("bundleDimension", function(d) {
       if (!d3.keys(__.dimensions).length) pc.detectDimensions();
       pc.autoscale();
-
       if (typeof d.value === "number") {
           if (d.value < d3.keys(__.dimensions).length) {
               __.bundleDimension = __.dimensions[d.value];
@@ -200,8 +199,6 @@ pc.autoscale = function() {
   // yscale
   var defaultScales = {
     "date": function(k) {
-
-
       var extent = d3.extent(__.data, function(d) {
         return d[k] ? d[k].getTime() : null;
       });
@@ -213,16 +210,10 @@ pc.autoscale = function() {
           .rangePoints(getRange());
       }
 
-     return d3.time.scale()
-      .domain(d3.extent(__.data, function(d) {
-      if(d[k])return d[k].getTime();
-      else return 0;
-      }))
-      .range([h()+1, 1])
-},
-
-
-
+      return d3.time.scale()
+        .domain(extent)
+        .range(getRange());
+    },
     "number": function(k) {
       var extent = d3.extent(__.data, function(d) { return +d[k]; });
 
@@ -878,7 +869,7 @@ pc.updateAxes = function(animationTime) {
       .duration(animationTime)
       .text(dimensionLabels)
       .attr("transform", "translate(0,-5) rotate(" + __.dimensionTitleRotation + ")");
-
+      
   // Exit
   g_data.exit().remove();
 
@@ -1148,7 +1139,6 @@ pc.brushMode = function(mode) {
 		// test if within range
 		var within = {
 			"date": function(d,p,dimension) {
-
 	if (typeof __.dimensions[p].yscale.rangePoints === "function") { // if it is ordinal
           return extents[dimension][0] <= __.dimensions[p].yscale(d[p]) && __.dimensions[p].yscale(d[p]) <= extents[dimension][1]
         } else {

@@ -111,7 +111,7 @@ function parallelCoordinates(data, countryName) {
   data.forEach(function(d,i) { d.id = d.id || i; });
   var hiddenAxes;
   if(countryName) {
-    hiddenAxes = ["Country", "id","USA State"]
+    hiddenAxes = ["id","USA State"]
     parcoords
     .data(data)
     .hideAxis(hiddenAxes)
@@ -132,7 +132,7 @@ function parallelCoordinates(data, countryName) {
   //   .brushMode("1D-axes");
   // }
   else {
-    hiddenAxes = ["CountryName", "id","USA State"]
+    hiddenAxes = ["CountryName", "id","USA State","AverageDate"]
     parcoords
     .data(data)
     .hideAxis(hiddenAxes)
@@ -140,11 +140,8 @@ function parallelCoordinates(data, countryName) {
     .composite("darken")
     .reorderable()
     .brushMode("1D-axes");
-
-
-
-
   }
+
 
     // Color scale: give me a specie name, I return a color
   parcoords.color(function(d) {
@@ -205,9 +202,11 @@ function parallelCoordinates(data, countryName) {
         return "green";
     
 });
+//date in ascending by YYYY-''
+//regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
+ var dateParse = d3.format("YYYY").parse;
 
- var dateParse = d3.time.format("%m/%d/%Y").parse;
- d3.descending(dateParse);
+ d3.ascending(dateParse);
   // setting up grid
   var column_keys = d3.keys(data[0]);
   var columns = column_keys.map(function(key,i) {
@@ -296,63 +295,77 @@ function comparer(a, b) {
   }
 
   function resetSelectedCountryAlphabet() {
+
     if(filterdFlag) {
       data = d3.csv.parse(contents);
       parallelCoordinates(data, false);
       parcoords.updateAxes();
       filterdFlag = false;
       document.getElementById("reset").style.display = "hidden";
+
     }
-    
   }
 
 
   function onClickTick() {
+    resetSelectedCountryAlphabet();
     console.log("This is the one clicked:", this.innerHTML, (/[a-zA-Z]/).test(this.innerHTML));
-  
-    var innerLabel = this.innerHTML;
-    if((/[a-zA-Z]/).test(innerLabel)) {
-      data = d3.csv.parse(contents);
-      dataToFilter = data;
-      console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
-      parallelCoordinates(dataToFilter.filter(d => d.Country === innerLabel), true);
-      parcoords.updateAxes();
-    }
+
       var innerLabel = this.innerHTML;
-    if((/[dd/MM/yy]/).test(innerLabel)) {
-      data = d3.csv.parse(contents);
-      dataToFilter = data;
-      console.log("Filtered Data", dataToFilter.filter(d => d.Date === innerLabel));
-      parallelCoordinates(dataToFilter.filter(d => d.Date === innerLabel), false);
-      parcoords.updateAxes();
+      if((/[a-zA-Z]/).test(innerLabel)) {
+        data = d3.csv.parse(contents);
+        dataToFilter = data;
+        console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
+        parallelCoordinates(dataToFilter.filter(d => d.Country === innerLabel), true);
+     //  parcoords.reset(d => d.CountryName);
+        parcoords.updateAxes();
+        document.getElementById("reset").style.display = "block";
+        document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
+        allTicks = document.querySelectorAll(".tick text");
+          for (var i = 0, max=allTicks.length; i < max; i++) {
+          allTicks[i].addEventListener("click", onClickTick);
+  }
+
+       
+    }
+      regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
+      if((innerLabel.match(/\//g) || []).length >= 2) {
+        console.log("clicked on date",  innerLabel);
+        data = d3.csv.parse(contents);
+        dataToFilter = data;
+        console.log("Filtered Data", dataToFilter.filter(d => d.Date === innerLabel));
+        parallelCoordinates(dataToFilter.filter(d => d.Date === innerLabel), false);
+        parcoords.updateAxes();
+
     }
     filterdFlag = true;
     console.log(document.getElementById("reset"));
     document.getElementById("reset").style.display = "block";
 
-   parcoords.color(function(d) {
+     parcoords.color(function(d) {
+    console.log(d.Date);
     // d corresponds to the individual data object
-       if (d.Date == "02-15-2021")
-        return "yellow";
-      if  (d.Date == "01-15-2021")
-        return "Green";
-      if  (d.Date == "04-15-2020")
-        return "turquoise";
-      if  (d.Date == "05-15-2021")
-        return "tan";
-      if  (d.Date == '06-15-2021')
-        return "sienna"; 
-      if (d.Date == '07-15-2021')
-        return "plum";
-       if  (d.Date == '08-15-2021')
-        return "pink";
-      if (d.Date == '09-15-2021')
-        return "orange";
-      if (d.Date == '10-15-2021')
+       if (d.Date == "02/15/21")
         return "red";
-      if (d.Date == '11-15-2021')
+      if  (d.Date == "01/15/21")
+        return "blue";
+      if  (d.Date == "04/04/20")
+        return "turquoise";
+      if  (d.Date == "05/15/20")
+        return "tan";
+      if  (d.Date == '06/15/20')
+        return "sienna"; 
+      if (d.Date == '07/15/20')
+        return "plum";
+       if  (d.Date == '08/15/20')
+        return "green";
+      if (d.Date == '09/15/20')
+        return "orange";
+      if (d.Date == '10/15/20')
+        return "black";
+      if (d.Date == '11/15/20')
         return "maroon";
-      if (d.Date == '12-15-2021')
+      if (d.Date == '12/15/20')
         return "magenta";
   else
         return "green";
@@ -381,139 +394,7 @@ function handleFiles() {
   reader.readAsText(file);
 };
 
-function isOnLine(startPt, endPt, testPt, tol){
-  // check if test point is close enough to a line
-  // between startPt and endPt. close enough means smaller than tolerance
-  var x0 = testPt[0];
-  var y0 = testPt[1];
-  var x1 = startPt[0];
-  var y1 = startPt[1];
-  var x2 = endPt[0];
-  var y2 = endPt[1];
-  var Dx = x2 - x1;
-  var Dy = y2 - y1;
-  var delta = Math.abs(Dy*x0 - Dx*y0 - x1*y2+x2*y1)/Math.sqrt(Math.pow(Dx, 2) + Math.pow(Dy, 2)); 
-  //console.log(delta);
-  if (delta <= tol) return true;
-  return false;
-}
 
-function findAxes(testPt, cenPts){
-  // finds between which two axis the mouse is
-  var x = testPt[0];
-  var y = testPt[1];
-
-  // make sure it is inside the range of x
-  if (cenPts[0][0] > x) return false;
-  if (cenPts[cenPts.length-1][0] < x) return false;
-
-  // find between which segment the point is
-  for (var i=0; i<cenPts.length; i++){
-    if (cenPts[i][0] > x) return i;
-  
-  }
-}
-function addTooltip(clicked, clickedCenPts){
-  
-  // sdd tooltip to multiple clicked lines
-    var clickedDataSet = [];
-    var margins = graph.margin()
-
-    // get all the values into a single list
-    // I'm pretty sure there is a better way to write this is Javascript
-    for (var i=0; i<clicked.length; i++){
-      for (var j=0; j<clickedCenPts[i].length; j++){
-        var text = d3.values(clicked[i])[j];
-        // not clean at all!
-        var x = clickedCenPts[i][j][0] - margins.left;
-        var y = clickedCenPts[i][j][1] - margins.top;
-        clickedDataSet.push([x, y, text]);
-    };
-  };
-
-  // add rectangles
-  var fontSize = 14;
-  var padding = 2;
-  var rectHeight = fontSize + 2 * padding; //based on font size
-
-  graph.svg.selectAll("rect[id='tooltip']")
-          .data(clickedDataSet).enter()
-          .append("rect")
-          .attr("x", function(d) { return d[0] - d[2].length * 5;})
-      .attr("y", function(d) { return d[1] - rectHeight + 2 * padding; })
-      .attr("rx", "2")
-      .attr("ry", "2")
-      .attr("id", "tooltip")
-      .attr("fill", "grey")
-      .attr("opacity", 0.9)
-      .attr("width", function(d){return d[2].length * 10;})
-      .attr("height", rectHeight)
-      .style("pointer-events", "none");
-
-  // add text on top of rectangle
-  graph.svg.selectAll("text[id='tooltip']")
-      .data(clickedDataSet).enter()
-        .append("text")
-      .attr("x", function(d) { return d[0];})
-      .attr("y", function(d) { return d[1]; })
-      .attr("id", "tooltip")
-      .attr("fill", "white")
-      .attr("text-anchor", "middle")
-      .attr("font-size", fontSize)
-      .text( function (d){ return d[2];})    
-      .style("pointer-events", "none");
-}
-function getClickedLines(mouseClick){
-    var clicked = [];
-    var clickedCenPts = [];
-
-  // find which data is activated right now
-  var activeData = getActiveData();
-
-  // find centriod points
-  var graphCentPts = getCentroids(activeData);
-
-    if (graphCentPts.length==0) return false;
-
-  // find between which axes the point is
-    var axeNum = findAxes(mouseClick, graphCentPts[0]);
-    if (!axeNum) return false;
-    
-    graphCentPts.forEach(function(d, i){
-      if (clicked.length > 1) return;
-      if (isOnLine(d[axeNum-1], d[axeNum], mouseClick, 2)){
-        clicked.push(activeData[i]);
-        clickedCenPts.push(graphCentPts[i]); // for tooltip
-      }
-  });
-  
-  return [clicked, clickedCenPts]
-}
-
-function highlightLineOnClick(mouseClick, drawTooltip){
-  
-  var clicked = [];
-    var clickedCenPts = [];
-  
-  clickedData = getClickedLines(mouseClick);
-
-  if (clickedData && clickedData[0].length!=0){
-
-    clicked = clickedData[0];
-      clickedCenPts = clickedData[1];
-
-      // highlight clicked line
-      graph.highlight(clicked);
-    
-    if (drawTooltip){
-      // clean if anything is there
-      cleanTooltip();
-        // add tooltip
-        addTooltip(clicked, clickedCenPts);
-    }
-
-  }
-};
 </script>
 
 
