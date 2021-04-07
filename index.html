@@ -87,9 +87,7 @@ body, html {
 var data;
 var contents;
 var filterdFlag = false;
-
-
-
+var clicked;
 
 var parcoords = d3.parcoords()("#example")
   .alpha(0.4)
@@ -105,7 +103,7 @@ var parcoords = d3.parcoords()("#example")
 var instructions = "-Drag around axis to begin brush. -Click axis to clear brush. -Click a label to color data based on axis values. -Hover on each line to highlight."
 
 // create chart from loaded data
-function parallelCoordinates(data, countryName) {
+function parallelCoordinates(data, countryName,Date) {
   // slickgrid needs each data element to have an i
 
   data.forEach(function(d,i) { d.id = d.id || i; });
@@ -121,18 +119,9 @@ function parallelCoordinates(data, countryName) {
     .brushMode("1D-axes");
 
  }
-  //   else if(AverageDate) {
-  //   hiddenAxes = ["Country", "id","USA State","Date"]
-  //   parcoords
-  //   .data(data)
-  //   .hideAxis(hiddenAxes)
-  //   .render()
-  //   .composite("darken")
-  //   .reorderable()
-  //   .brushMode("1D-axes");
-  // }
+
   else {
-    hiddenAxes = ["CountryName", "id","USA State","AverageDate"]
+    hiddenAxes = ["CountryName", "id","USA State","Date"]
     parcoords
     .data(data)
     .hideAxis(hiddenAxes)
@@ -204,9 +193,9 @@ function parallelCoordinates(data, countryName) {
 });
 //date in ascending by YYYY-''
 //regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
- var dateParse = d3.format("YYYY").parse;
+ var dateParse = d3.format("MM").parse;
 
- d3.ascending(dateParse);
+ d3.descending(dateParse);
   // setting up grid
   var column_keys = d3.keys(data[0]);
   var columns = column_keys.map(function(key,i) {
@@ -302,17 +291,25 @@ function comparer(a, b) {
       parcoords.updateAxes();
       filterdFlag = false;
       document.getElementById("reset").style.display = "hidden";
-
+      clicked = null;
     }
   }
+    function resetSelectedDate() {
+        if(filterdFlag) {
+            data = d3.csv.parse(contents);
+            parallelCoordinates(data, false);
+            parcoords.updateAxes();
+            filterdFlag = false;
+            document.getElementById("reset").style.display = "hidden";
 
+        }
+    }
 
   function onClickTick() {
     resetSelectedCountryAlphabet();
     console.log("This is the one clicked:", this.innerHTML, (/[a-zA-Z]/).test(this.innerHTML));
-
-      var innerLabel = this.innerHTML;
-      if((/[a-zA-Z]/).test(innerLabel)) {
+      const innerLabel = this.innerHTML;
+      if((/[a-zA-Z]/).test(innerLabel) && innerLabel.length == 1) {
         data = d3.csv.parse(contents);
         dataToFilter = data;
         console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
@@ -323,20 +320,26 @@ function comparer(a, b) {
         document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
         allTicks = document.querySelectorAll(".tick text");
           for (var i = 0, max=allTicks.length; i < max; i++) {
-          allTicks[i].addEventListener("click", onClickTick);
-  }
-
-       
-    }
-      regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
-      if((innerLabel.match(/\//g) || []).length >= 2) {
+              allTicks[i].addEventListener("click", onClickTick);
+          }
+          clicked = innerLabel;
+      }
+console.log("clicked", clicked);
+      if(clicked && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
         console.log("clicked on date",  innerLabel);
         data = d3.csv.parse(contents);
         dataToFilter = data;
-        console.log("Filtered Data", dataToFilter.filter(d => d.Date === innerLabel));
-        parallelCoordinates(dataToFilter.filter(d => d.Date === innerLabel), false);
+        console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
+        const country_filtered = dataToFilter.filter(d => d.Country === clicked) || [];
+        parallelCoordinates(country_filtered.filter(d => d.A_Date === innerLabel), true);
         parcoords.updateAxes();
-
+        //on click evvent
+          document.getElementById("reset").style.display = "block";
+          document.getElementById("reset").addEventListener("click", resetSelectedDate)
+          allTicks = document.querySelectorAll(".tick text");
+          for (var i = 0, max=allTicks.length; i < max; i++) {
+              allTicks[i].addEventListener("click", onClickTick);
+          }
     }
     filterdFlag = true;
     console.log(document.getElementById("reset"));
@@ -345,27 +348,27 @@ function comparer(a, b) {
      parcoords.color(function(d) {
     console.log(d.Date);
     // d corresponds to the individual data object
-       if (d.Date == "02/15/21")
+       if (d.Date == "2021-02-15")
         return "red";
-      if  (d.Date == "01/15/21")
+      if  (d.Date == "2021-01-15")
         return "blue";
-      if  (d.Date == "04/04/20")
+      if  (d.Date == "2020-04-04")
         return "turquoise";
-      if  (d.Date == "05/15/20")
+      if  (d.Date == "2020-05-15")
         return "tan";
-      if  (d.Date == '06/15/20')
+      if  (d.Date == '2020-06-15')
         return "sienna"; 
-      if (d.Date == '07/15/20')
+      if (d.Date == '2020-07-15')
         return "plum";
-       if  (d.Date == '08/15/20')
+       if  (d.Date == '2020-08-15')
         return "green";
-      if (d.Date == '09/15/20')
+      if (d.Date == '2020-09-15')
         return "orange";
-      if (d.Date == '10/15/20')
+      if (d.Date == '2020-10-15')
         return "black";
-      if (d.Date == '11/15/20')
+      if (d.Date == '2020-11-15')
         return "maroon";
-      if (d.Date == '12/15/20')
+      if (d.Date == '2020-12-15')
         return "magenta";
   else
         return "green";
