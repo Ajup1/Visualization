@@ -87,7 +87,7 @@ body, html {
 var data;
 var contents;
 var filterdFlag = false;
-var clicked;
+var clicked_country;
 
 var parcoords = d3.parcoords()("#example")
   .alpha(0.4)
@@ -276,11 +276,16 @@ function comparer(a, b) {
 
   // From here my
 
-  document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
+  document.getElementById("reset").addEventListener("click", handleResetClicked)
 
   allTicks = document.querySelectorAll(".tick text");
   for (var i = 0, max=allTicks.length; i < max; i++) {
     allTicks[i].addEventListener("click", onClickTick);
+  }
+
+  function handleResetClicked() {
+    resetSelectedCountryAlphabet()
+    clicked_country = null
   }
 
   function resetSelectedCountryAlphabet() {
@@ -291,7 +296,6 @@ function comparer(a, b) {
       parcoords.updateAxes();
       filterdFlag = false;
       document.getElementById("reset").style.display = "hidden";
-      clicked = null;
     }
   }
     function resetSelectedDate() {
@@ -322,15 +326,15 @@ function comparer(a, b) {
           for (var i = 0, max=allTicks.length; i < max; i++) {
               allTicks[i].addEventListener("click", onClickTick);
           }
-          clicked = innerLabel;
+          clicked_country = innerLabel;
       }
-console.log("clicked", clicked);
-      if(clicked && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
+      console.log("clicked", clicked_country);
+      if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
         console.log("clicked on date",  innerLabel);
         data = d3.csv.parse(contents);
         dataToFilter = data;
         console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
-        const country_filtered = dataToFilter.filter(d => d.Country === clicked) || [];
+        const country_filtered = dataToFilter.filter(d => d.Country === clicked_country) || [];
         parallelCoordinates(country_filtered.filter(d => d.A_Date === innerLabel), true);
         parcoords.updateAxes();
         //on click evvent
