@@ -23,45 +23,45 @@
 <p style="color: #a00;"></p>
 
 <style>
-body, html {
-  margin: 0;
-  height: 100%;
-  width: 100%;
-  overflow: hidden;
-  font-size: 12px;
-}
-#grid, #pager {
-  position: fixed;
-  width: 100%;
-}
-#grid {
-  bottom: 0;
-  height: 200px;
-  padding-left: 3px;
-}
-/*#pager {
-  bottom: 106px;
-  height: 20px;
-}*/
-.slick-row:hover {
-  font-weight: bold;
-  color: #069;
-}
+    body, html {
+        margin: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        font-size: 12px;
+    }
+    #grid, #pager {
+        position: fixed;
+        width: 100%;
+    }
+    #grid {
+        bottom: 0;
+        height: 200px;
+        padding-left: 3px;
+    }
+    /*#pager {
+      bottom: 106px;
+      height: 20px;
+    }*/
+    .slick-row:hover {
+        font-weight: bold;
+        color: #069;
+    }
 
-#wrapper {
-     position: relative;
-     float: left;
-     top: 10px;
-     font-family: sans-serif;
-     font-size: 10px;
-  }
+    #wrapper {
+        position: relative;
+        float: left;
+        top: 10px;
+        font-family: sans-serif;
+        font-size: 10px;
+    }
 
-  #tooltip{
-    font-family: sans-serif;
-    font-size: 14px;
-    font-weight: bold;
-    color:black;
-  }
+    #tooltip{
+        font-family: sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        color:black;
+    }
 
 </style>
 <H1> COVID </H1>
@@ -79,323 +79,344 @@ body, html {
 </div>
 </div>
 <div>
-<div id="grid"></div>
+    <div id="grid"></div>
 </div>
 <div id="pager"></div>
 <script>
 
-var data;
-var contents;
-var filterdFlag = false;
-var clicked;
+    var data;
+    var contents;
+    var filterdFlag = false;
+    var clicked_country;
 
-var parcoords = d3.parcoords()("#example")
-  .alpha(0.4)
-  .mode("queue") // progressive rendering
-  .height(d3.max([document.body.clientHeight-326, 220]))
-  .margin({
-    top: 20,
-    left: 0,
-    right: 0,
-    bottom: 89});
+    var parcoords = d3.parcoords()("#example")
+        .alpha(0.4)
+        .mode("queue") // progressive rendering
+        .height(d3.max([document.body.clientHeight-326, 220]))
+        .margin({
+            top: 20,
+            left: 0,
+            right: 0,
+            bottom: 89});
 
-  // add instruction text
-var instructions = "-Drag around axis to begin brush. -Click axis to clear brush. -Click a label to color data based on axis values. -Hover on each line to highlight."
+    // add instruction text
+    var instructions = "-Drag around axis to begin brush. -Click axis to clear brush. -Click a label to color data based on axis values. -Hover on each line to highlight."
 
-// create chart from loaded data
-function parallelCoordinates(data, countryName,Date) {
-  // slickgrid needs each data element to have an i
+    // create chart from loaded data
+    function parallelCoordinates(data, countryName,Date) {
+        // slickgrid needs each data element to have an i
 
-  data.forEach(function(d,i) { d.id = d.id || i; });
-  var hiddenAxes;
-  if(countryName) {
-    hiddenAxes = ["id","USA State"]
-    parcoords
-    .data(data)
-    .hideAxis(hiddenAxes)
-    .render()
-    .composite("darken")
-    .reorderable()
-    .brushMode("1D-axes");
-
- }
-
-  else {
-    hiddenAxes = ["CountryName", "id","USA State","Date"]
-    parcoords
-    .data(data)
-    .hideAxis(hiddenAxes)
-    .render()
-    .composite("darken")
-    .reorderable()
-    .brushMode("1D-axes");
-  }
-
-
-    // Color scale: give me a specie name, I return a color
-  parcoords.color(function(d) {
-   
-       if (d.Country == 'A')
-        return "yellow";
-      if  (d.Country == 'B')
-        return "Green";
-      if  (d.Country == 'C')
-        return "turquoise";
-      if  (d.Country == 'D')
-        return "tan";
-      if  (d.Country == 'E')
-        return "sienna"; 
-      if (d.Country == 'F')
-        return "plum";
-       if  (d.Country == 'G')
-        return "pink";
-      if (d.Country == 'H')
-        return "orange";
-      if (d.Country == 'I')
-        return "red";
-      if (d.Country == 'J')
-        return "maroon";
-      if (d.Country == 'K')
-        return "magenta";
-        if (d.Country == 'L')
-        return "khaki";
-      if  (d.Country == 'M')
-        return "purple";
-      if  (d.Country == 'N')
-        return "navy";
-      if  (d.Country == 'O')
-        return "gold";
-      if  (d.Country == 'P')
-        return "cyan"; 
-      if (d.Country == 'Q')
-        return "coral";
-       if  (d.Country == 'R')
-        return "brown";
-      if (d.Country == 'S')
-        return "black";
-      if (d.Country == 'T')
-        return "aquamarine";
-      if (d.Country == 'U')
-        return "blue";
-      if (d.Country == 'V')
-        return "violet";
-      if (d.Country == 'W')
-        return "plum";
-       if  (d.Country == 'X')
-        return "pink";
-      if (d.Country == 'Y')
-        return "orange";
-      if (d.Country == 'Z')
-        return "navy";
-      else
-        return "green";
-    
-});
-//date in ascending by YYYY-''
-//regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
- var dateParse = d3.format("MM").parse;
-
- d3.descending(dateParse);
-  // setting up grid
-  var column_keys = d3.keys(data[0]);
-  var columns = column_keys.map(function(key,i) {
-    return {
-      id: key,
-      name: key,
-      field: key,
-      sortable: true
-    }
-  });
-
-  var options = {
-    enableCellNavigation: true,
-    enableColumnReorder: false,
-    multiColumnSort: false
-  };
-
-  var dataView = new Slick.Data.DataView();
-  var grid = new Slick.Grid("#grid", dataView, columns, options);
-  //var pager = new Slick.Controls.Pager(dataView, grid, $("#pager"));
-
-  // wire up model events to drive the grid
-  dataView.onRowCountChanged.subscribe(function (e, args) {
-    grid.updateRowCount();
-    grid.render();
-  });
-
-  dataView.onRowsChanged.subscribe(function (e, args) {
-    grid.invalidateRows(args.rows);
-    grid.render();
-  });
-
-  // column sorting
-  var sortcol = column_keys[0];
-  var sortdir = 1;
-
-function comparer(a, b) {
-    var x = a[sortcol], y = b[sortcol];
-    return (x == y ? 0 : (x > y ? 1 : -1));
-  }
-  
-  // click header to sort grid column
-  grid.onSort.subscribe(function (e, args) {
-    sortdir = args.sortAsc ? 1 : -1;
-    sortcol = args.sortCol.field;
-
-    if ($.browser.msie && $.browser.version <= 8) {
-      dataView.fastSort(sortcol, args.sortAsc);
-    } else {
-      dataView.sort(comparer, args.sortAsc);
-    }
-  });
-
-  // highlight row in chart
-  grid.onMouseEnter.subscribe(function(e,args) {
-    var i = grid.getCellFromEvent(e).row;
-    var d = parcoords.brushed() || data;
-    parcoords.highlight([d[i]]);
-  });
-  grid.onMouseLeave.subscribe(function(e,args) {
-    parcoords.unhighlight();
-  });
-
-  // fill grid with data
-  gridUpdate(data);
-
-  // update grid on brush
-  parcoords.on("brush", function(d) {
-    gridUpdate(d);
-  });
-
-  function gridUpdate(data) {
-    dataView.beginUpdate();
-    dataView.setItems(data);
-    dataView.endUpdate();
-  };
-
-
-  // From here my
-
-  document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
-
-  allTicks = document.querySelectorAll(".tick text");
-  for (var i = 0, max=allTicks.length; i < max; i++) {
-    allTicks[i].addEventListener("click", onClickTick);
-  }
-
-  function resetSelectedCountryAlphabet() {
-
-    if(filterdFlag) {
-      data = d3.csv.parse(contents);
-      parallelCoordinates(data, false);
-      parcoords.updateAxes();
-      filterdFlag = false;
-      document.getElementById("reset").style.display = "hidden";
-      clicked = null;
-    }
-  }
-    function resetSelectedDate() {
-        if(filterdFlag) {
-            data = d3.csv.parse(contents);
-            parallelCoordinates(data, false);
-            parcoords.updateAxes();
-            filterdFlag = false;
-            document.getElementById("reset").style.display = "hidden";
+        data.forEach(function(d,i) { d.id = d.id || i; });
+        var hiddenAxes;
+        if(countryName) {
+            hiddenAxes = ["id","USA State"]
+            parcoords
+                .data(data)
+                .hideAxis(hiddenAxes)
+                .render()
+                .composite("darken")
+                .reorderable()
+                .brushMode("1D-axes");
 
         }
-    }
 
-  function onClickTick() {
-    resetSelectedCountryAlphabet();
-    console.log("This is the one clicked:", this.innerHTML, (/[a-zA-Z]/).test(this.innerHTML));
-      const innerLabel = this.innerHTML;
-      if((/[a-zA-Z]/).test(innerLabel) && innerLabel.length == 1) {
-        data = d3.csv.parse(contents);
-        dataToFilter = data;
-        console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
-        parallelCoordinates(dataToFilter.filter(d => d.Country === innerLabel), true);
-     //  parcoords.reset(d => d.CountryName);
-        parcoords.updateAxes();
-        document.getElementById("reset").style.display = "block";
-        document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
+        else {
+            hiddenAxes = ["CountryName", "id","USA State","Date"]
+            parcoords
+                .data(data)
+                .hideAxis(hiddenAxes)
+                .render()
+                .composite("darken")
+                .reorderable()
+                .brushMode("1D-axes");
+        }
+
+
+        // Color scale: give me a specie name, I return a color
+        parcoords.color(function(d) {
+
+            if (d.Country == 'A')
+                return "yellow";
+            if  (d.Country == 'B')
+                return "Green";
+            if  (d.Country == 'C')
+                return "turquoise";
+            if  (d.Country == 'D')
+                return "tan";
+            if  (d.Country == 'E')
+                return "sienna";
+            if (d.Country == 'F')
+                return "plum";
+            if  (d.Country == 'G')
+                return "pink";
+            if (d.Country == 'H')
+                return "orange";
+            if (d.Country == 'I')
+                return "red";
+            if (d.Country == 'J')
+                return "maroon";
+            if (d.Country == 'K')
+                return "magenta";
+            if (d.Country == 'L')
+                return "khaki";
+            if  (d.Country == 'M')
+                return "purple";
+            if  (d.Country == 'N')
+                return "navy";
+            if  (d.Country == 'O')
+                return "gold";
+            if  (d.Country == 'P')
+                return "cyan";
+            if (d.Country == 'Q')
+                return "coral";
+            if  (d.Country == 'R')
+                return "brown";
+            if (d.Country == 'S')
+                return "black";
+            if (d.Country == 'T')
+                return "aquamarine";
+            if (d.Country == 'U')
+                return "blue";
+            if (d.Country == 'V')
+                return "violet";
+            if (d.Country == 'W')
+                return "plum";
+            if  (d.Country == 'X')
+                return "pink";
+            if (d.Country == 'Y')
+                return "orange";
+            if (d.Country == 'Z')
+                return "navy";
+            else
+                return "green";
+
+        });
+//date in ascending by YYYY-''
+//regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
+        var dateParse = d3.format("MM").parse;
+
+        d3.descending(dateParse);
+        // setting up grid
+        var column_keys = d3.keys(data[0]);
+        var columns = column_keys.map(function(key,i) {
+            return {
+                id: key,
+                name: key,
+                field: key,
+                sortable: true
+            }
+        });
+
+        var options = {
+            enableCellNavigation: true,
+            enableColumnReorder: false,
+            multiColumnSort: false
+        };
+
+        var dataView = new Slick.Data.DataView();
+        var grid = new Slick.Grid("#grid", dataView, columns, options);
+        //var pager = new Slick.Controls.Pager(dataView, grid, $("#pager"));
+
+        // wire up model events to drive the grid
+        dataView.onRowCountChanged.subscribe(function (e, args) {
+            grid.updateRowCount();
+            grid.render();
+        });
+
+        dataView.onRowsChanged.subscribe(function (e, args) {
+            grid.invalidateRows(args.rows);
+            grid.render();
+        });
+
+        // column sorting
+        var sortcol = column_keys[0];
+        var sortdir = 1;
+
+        function comparer(a, b) {
+            var x = a[sortcol], y = b[sortcol];
+            return (x == y ? 0 : (x > y ? 1 : -1));
+        }
+
+        // click header to sort grid column
+        grid.onSort.subscribe(function (e, args) {
+            sortdir = args.sortAsc ? 1 : -1;
+            sortcol = args.sortCol.field;
+
+            if ($.browser.msie && $.browser.version <= 8) {
+                dataView.fastSort(sortcol, args.sortAsc);
+            } else {
+                dataView.sort(comparer, args.sortAsc);
+            }
+        });
+
+        // highlight row in chart
+        grid.onMouseEnter.subscribe(function(e,args) {
+            var i = grid.getCellFromEvent(e).row;
+            var d = parcoords.brushed() || data;
+            parcoords.highlight([d[i]]);
+        });
+        grid.onMouseLeave.subscribe(function(e,args) {
+            parcoords.unhighlight();
+        });
+
+        // fill grid with data
+        gridUpdate(data);
+
+        // update grid on brush
+        parcoords.on("brush", function(d) {
+            gridUpdate(d);
+        });
+
+        function gridUpdate(data) {
+            dataView.beginUpdate();
+            dataView.setItems(data);
+            dataView.endUpdate();
+        };
+
+
+        // From here my
+
+        document.getElementById("reset").addEventListener("click", handleResetClicked)
+
         allTicks = document.querySelectorAll(".tick text");
-          for (var i = 0, max=allTicks.length; i < max; i++) {
-              allTicks[i].addEventListener("click", onClickTick);
-          }
-          clicked = innerLabel;
-      }
-console.log("clicked", clicked);
-      if(clicked && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
-        console.log("clicked on date",  innerLabel);
+        for (var i = 0, max=allTicks.length; i < max; i++) {
+            allTicks[i].addEventListener("click", onClickTick);
+        }
+
+        function handleResetClicked() {
+            resetSelectedCountryAlphabet()
+            clicked_country = null
+        }
+
+        function resetSelectedCountryAlphabet() {
+
+            if(filterdFlag) {
+                data = d3.csv.parse(contents);
+                parallelCoordinates(data, false);
+                parcoords.updateAxes();
+                filterdFlag = false;
+                document.getElementById("reset").style.display = "hidden";
+            }
+        }
+        function resetSelectedDate() {
+            if(filterdFlag) {
+                data = d3.csv.parse(contents);
+                parallelCoordinates(data, false);
+                parcoords.updateAxes();
+                filterdFlag = false;
+                document.getElementById("reset").style.display = "hidden";
+
+            }
+        }
+
+        function onClickTick() {
+            resetSelectedCountryAlphabet();
+            console.log("This is the one clicked:", this.innerHTML, (/[a-zA-Z]/).test(this.innerHTML));
+            const innerLabel = this.innerHTML;
+            if((/[a-zA-Z]/).test(innerLabel) && innerLabel.length == 1) {
+                data = d3.csv.parse(contents);
+                dataToFilter = data;
+                console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
+                parallelCoordinates(dataToFilter.filter(d => d.Country === innerLabel), true);
+                //  parcoords.reset(d => d.CountryName);
+                parcoords.updateAxes();
+                document.getElementById("reset").style.display = "block";
+                document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
+                allTicks = document.querySelectorAll(".tick text");
+                for (var i = 0, max=allTicks.length; i < max; i++) {
+                    allTicks[i].addEventListener("click", onClickTick);
+                }
+                clicked_country = innerLabel;
+            }
+            console.log("clicked", clicked_country);
+            //if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
+            if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 4 && innerLabel.split("-")[1].length == 2 ) {
+                console.log("clicked on date",  innerLabel);
+                data = d3.csv.parse(contents);
+                dataToFilter = data;
+                console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
+                const country_filtered = dataToFilter.filter(d => d.Country === clicked_country) || [];
+                parallelCoordinates(country_filtered.filter(d => d.A_Date === innerLabel), true);
+                parcoords.updateAxes();
+                //on click evvent
+                document.getElementById("reset").style.display = "block";
+                document.getElementById("reset").addEventListener("click", resetSelectedDate)
+                allTicks = document.querySelectorAll(".tick text");
+                for (var i = 0, max=allTicks.length; i < max; i++) {
+                    allTicks[i].addEventListener("click", onClickTick);
+                }
+            }
+            filterdFlag = true;
+            console.log(document.getElementById("reset"));
+            document.getElementById("reset").style.display = "block";
+
+            parcoords.color(function(d) {
+                console.log(d.Date);
+                // d corresponds to the individual data object
+                if (d.Date == "2021-02-15")
+                    return "red";
+                if  (d.Date == "2021-01-15")
+                    return "red";
+                if (d.Date == '2021-01-05')
+                    return "purple";
+
+                if (d.Date == '2021-01-20')
+                    return "orange";
+                if (d.Date == '2021-01-25')
+                    return "pink";
+                if (d.Date == '2021-01-30')
+                    return "maroon";
+                if  (d.Date == "2020-04-04")
+                    return "turquoise";
+                if  (d.Date == "2020-05-15")
+                    return "tan";
+                if  (d.Date == '2020-06-15')
+                    return "sienna";
+                if (d.Date == '2020-07-15')
+                    return "plum";
+                if  (d.Date == '2020-08-15')
+                    return "green";
+                if (d.Date == '2020-09-15')
+                    return "orange";
+                if (d.Date == '2020-10-15')
+                    return "black";
+                if (d.Date == '2020-11-15')
+                    return "maroon";
+                if (d.Date == '2020-12-15')
+                    return "magenta";
+                if (d.A_Date == '2021-01')
+                    return "red";
+
+                if (d.A_Date == '2021-02')
+                    return "green";
+                if (d.A_Date == '2021-03')
+                    return "blue";
+                else
+                    return "green";
+            });
+
+        }
+    };
+
+    // CSV Uploader
+    var uploader = document.getElementById("uploader");
+    var reader = new FileReader();
+
+    reader.onload = function(e) {
+        contents = e.target.result;
         data = d3.csv.parse(contents);
-        dataToFilter = data;
-        console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
-        const country_filtered = dataToFilter.filter(d => d.Country === clicked) || [];
-        parallelCoordinates(country_filtered.filter(d => d.A_Date === innerLabel), true);
-        parcoords.updateAxes();
-        //on click evvent
-          document.getElementById("reset").style.display = "block";
-          document.getElementById("reset").addEventListener("click", resetSelectedDate)
-          allTicks = document.querySelectorAll(".tick text");
-          for (var i = 0, max=allTicks.length; i < max; i++) {
-              allTicks[i].addEventListener("click", onClickTick);
-          }
-    }
-    filterdFlag = true;
-    console.log(document.getElementById("reset"));
-    document.getElementById("reset").style.display = "block";
+        console.log("Data", data);
+        parallelCoordinates(data, false);
+        // remove button, since re-initializing doesn't work for now
+        uploader.parentNode.removeChild(uploader);
+    };
 
-     parcoords.color(function(d) {
-    console.log(d.Date);
-    // d corresponds to the individual data object
-       if (d.Date == "2021-02-15")
-        return "red";
-      if  (d.Date == "2021-01-15")
-        return "blue";
-      if  (d.Date == "2020-04-04")
-        return "turquoise";
-      if  (d.Date == "2020-05-15")
-        return "tan";
-      if  (d.Date == '2020-06-15')
-        return "sienna"; 
-      if (d.Date == '2020-07-15')
-        return "plum";
-       if  (d.Date == '2020-08-15')
-        return "green";
-      if (d.Date == '2020-09-15')
-        return "orange";
-      if (d.Date == '2020-10-15')
-        return "black";
-      if (d.Date == '2020-11-15')
-        return "maroon";
-      if (d.Date == '2020-12-15')
-        return "magenta";
-  else
-        return "green";
-});
-    
-  }
-};
+    uploader.addEventListener("change", handleFiles, false);
 
-// CSV Uploader
-var uploader = document.getElementById("uploader");  
-var reader = new FileReader();
-
-reader.onload = function(e) {
-  contents = e.target.result;
-  data = d3.csv.parse(contents);
-  console.log("Data", data);
-  parallelCoordinates(data, false);
-  // remove button, since re-initializing doesn't work for now
-  uploader.parentNode.removeChild(uploader);
-};
-
-uploader.addEventListener("change", handleFiles, false);  
-
-function handleFiles() {
-  var file = this.files[0];
-  reader.readAsText(file);
-};
+    function handleFiles() {
+        var file = this.files[0];
+        reader.readAsText(file);
+    };
 
 
 </script>
