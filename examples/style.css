@@ -1,6 +1,6 @@
 body {
   font-size: 14px;
-  font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+  font-family: "Big Caslon";
   margin: 24px;
   background: #fcfcfc;
   line-height: 1.45em;
@@ -23,7 +23,7 @@ p {
 }
 pre {
   color: #444;
-  font-family: Ubuntu Mono, Monaco, monospace;
+  /*font-family: Ubuntu Mono, Monaco, monospace;*/
   padding: 4px 8px;
   background: #f2f2f2;
   border: 1px solid #ccc;
