@@ -62,7 +62,6 @@
         font-weight: bold;
         color: black;
     }
-
 </style>
 <body>
 <button id="reset" style="display: none;">Reset</button>
@@ -351,6 +350,11 @@
             allTicks = document.querySelectorAll(".tick text");
             for (var i = 0, max = allTicks.length; i < max; i++) {
                 allTicks[i].addEventListener("click", onClickTick);
+                const innerLabel = allTicks[i].innerHTML;
+                if((/[a-zA-Z]/).test(innerLabel) && innerLabel.length == 1) {
+                    allTicks[i].style.fontSize = "20px";
+                    allTicks[i].style.fontFamily = '"Lucida Console", "Courier New", monospace';
+                }
             }
 
             function handleResetClicked() {
@@ -409,6 +413,7 @@
                         allTicks[i].addEventListener("click", onClickTick);
                     }
                     clicked_country = innerLabel;
+                    
                 }
                 console.log("clicked", clicked_country);
                 //if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
