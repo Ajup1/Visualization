@@ -1,0 +1,85 @@
+<!-- Code from d3-graph-gallery.com -->
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<!-- Add a radio button -->
+<input type="number" id="buttonXlim" value=9>
+
+<!-- Load d3.js -->
+<script src="https://d3js.org/d3.v4.js"></script>
+
+<!-- Create a div where the graph will take place -->
+<div id="my_dataviz"></div>
+
+
+<script>
+
+// set the dimensions and margins of the graph
+var margin = {top: 10, right: 30, bottom: 30, left: 60},
+    width = 460 - margin.left - margin.right,
+    height = 400 - margin.top - margin.bottom;
+
+// append the svg object to the body of the page
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+
+//Read the data
+d3.csv("final_output(24-06-2021).csv", function(data) {
+console.log(data);
+  // Add X axis
+  var x = d3.scaleLinear()
+    .domain([3000, 90000])
+    .range([ 0, width ]);
+  var xAxis = svg.append("g")
+    .attr("transform", "translate(0," + height + ")")
+    .call(d3.axisBottom(x));
+
+  // Add Y axis
+  var y = d3.scaleLinear()
+    .domain([1000, 90000])
+    .range([ height, 0]);
+  svg.append("g")
+    .call(d3.axisLeft(y));
+
+  // Add dots
+  svg.append('g')
+    .selectAll("dot")
+    .data(data)
+    .enter()
+    .append("circle")
+      .attr("cx", function (d) { return x(d.Avg_Tcase); } )
+      .attr("cy", function (d) { return y(d.Avg_Ncase); } )
+      .attr("r", 5)
+      .style("fill", "#69b3a2" )
+
+
+  // A function that update the plot for a given xlim value
+  function updatePlot() {
+
+    // Get the value of the button
+    xlim = this.value
+
+    // Update X axis
+    x.domain([3,xlim])
+    xAxis.transition().duration(1000).call(d3.axisBottom(x))
+
+    // Update chart
+    svg.selectAll("circle")
+       .data(data)
+       .transition()
+       .duration(1000)
+       .attr("cx", function (d) { return x(d.Avg_Tcase); } )
+       .attr("cy", function (d) { return y(d.Avg_Ncase); } )
+  }
+
+  // Add an event listener to the button created in the html part
+  d3.select("#buttonXlim").on("input", updatePlot )
+
+})
+
+</script>
