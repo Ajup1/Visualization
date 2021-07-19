@@ -1,6 +1,29 @@
 <!DOCTYPE HTML>
 <html>
 <head>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+    <span id = "lblData"></span>
+<!--    // Receive the Data-->
+    <script type="text/javascript">
+        var queryString = new Array();
+        $(function () {
+            if (queryString.length == 0) {
+                if (window.location.search.split('?').length > 1) {
+                    var params = window.location.search.split('?')[1].split('&');
+                    for (var i = 0; i < params.length; i++) {
+                        var key = params[i].split('=')[0];
+                        var value = decodeURIComponent(params[i].split('=')[1]);
+                        queryString[key] = value;
+                    }
+                }
+            }
+            if (queryString["list"] != null && queryString["list1"] != null) {
+                var data = "<u>Compare Variables</u><br /><br />";
+                data += "<b>Variable 1:</b> " + queryString["list"] + " <b>Variable 2:</b> " + queryString["list1"];
+                $("#lblData").html(data);
+            }
+        });
+    </script>
     <script>
         window.onload = function () {
 
@@ -8,15 +31,15 @@
         animationEnabled: true,
         zoomEnabled: true,
         title:{
-        text: "Real Estate Rates"
+        text: "Scatter Plot"
     },
         axisX: {
-        title:"Area (in sq. ft)",
-        minimum: 790,
+        title:queryString["list"],
+        minimum: 790, 
         maximum: 2260
     },
         axisY:{
-        title: "Price (in USD)",
+        title: queryString["list1"],
         valueFormatString: "$#,##0k"
     },
         data: [{
@@ -56,6 +79,7 @@
     </script>
 </head>
 <body>
+<input type="file" id="uploader">
 <div id="chartContainer" style="height: 300px; width: 100%;"></div>
 <script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
 </body>

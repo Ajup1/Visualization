@@ -79,16 +79,25 @@
 <!--<button id="hideticks">Hide Ticks</button>-->
 <button id="hide-ticks">Hide Ticks</button>
 <button id="show-ticks">Show Ticks</button>
-<button onclick="keep_data">Keep</button>
+<button onclick="zoom-plots()">Keep</button>
 <button id="3dayavg-data">Filter Row</button>
-<form action="/action_page.php">
-    <label for="avg-option">Choose Average:</label>
-    <select name="avg-option" id="avg-option">
-        <option value="3Day">3 Day Average</option>
-        <option value="5Day">5 Day Average</option>
+<script type="text/javascript">
+    function goToNewPage()
+    {
+        var url = document.getElementById('list').value;
+        if(url != 'none') {
+            window.location = url;
+        }
+    }
+</script>
+<form>
+    <select name="list" id="list" accesskey="target">
+        <option value='none' selected>Average Option</option>
+        <option value="3dayAverage.html">3 Day Average</option>
+        <option value="5dayAverage.html">5 Day Average</option>
+
     </select>
-    <br><br>
-    <input type="submit" value="Submit">
+    <input type=button value="Go" onclick="goToNewPage()" />
 </form>
 <div id="example" class="parcoords" style="font-family: Big Caslon" ;>
 </div>
@@ -116,10 +125,6 @@
             d3.select("body").attr("class", "dark");
         });
 
-    d3.select("#3dayavg-data")
-        .on("click", function() {
-            d3.select("body").attr("class", null);
-        });
 
     var colors = {
         "A": [28,100,52],
@@ -421,7 +426,7 @@
                         allTicks[i].addEventListener("click", onClickTick);
                     }
                     clicked_country = innerLabel;
-                    
+
                 }
                 console.log("clicked", clicked_country);
                 //if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
@@ -524,17 +529,23 @@
         };
 
         // CSV Uploader
-        var uploader = document.getElementById("uploader");
-        var reader = new FileReader();
+        // var uploader = document.getElementById("uploader");
+        // var reader = new FileReader();
+        //
+        // reader.onload = function (e) {
+        //     contents = e.target.result;
+        //     data = d3.csv('3dayAverage.csv');
+        //     console.log("Data", data);
+        //     parallelCoordinates(data, false);
+        //     // remove button, since re-initializing doesn't work for now
+        //     uploader.parentNode.removeChild(uploader);
+        // };
 
-        reader.onload = function (e) {
-            contents = e.target.result;
-            data = d3.csv.parse(contents);
-            console.log("Data", data);
-            parallelCoordinates(data, false);
-            // remove button, since re-initializing doesn't work for now
-            uploader.parentNode.removeChild(uploader);
-        };
+        // d3.csv('planet.csv', function(data) {
+        //     parcoords
+        //         .data(data)
+        //         .render()
+        //         .brushMode("1D-axes");  // enable brushing
 
         uploader.addEventListener("change", handleFiles, false);
 

@@ -1433,7 +1433,7 @@ pc.brushMode = function(mode) {
         minX: xscale(dims.left),
         maxX: xscale(dims.right),
         minY: 0,
-        maxY: h()
+        maxY: (h)()
       };
 
       strums[dims.i] = strum;

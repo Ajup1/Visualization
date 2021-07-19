@@ -1,85 +1,120 @@
-<!-- Code from d3-graph-gallery.com -->
 <!DOCTYPE html>
 <meta charset="utf-8">
-
-<!-- Add a radio button -->
-<input type="number" id="buttonXlim" value=9>
 
 <!-- Load d3.js -->
 <script src="https://d3js.org/d3.v4.js"></script>
 
 <!-- Create a div where the graph will take place -->
 <div id="my_dataviz"></div>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<span id = "lblData"></span>
+<!--    // Receive the Data-->
+<script type="text/javascript">
+    var queryString = new Array();
+    $(function () {
+        if (queryString.length == 0) {
+            if (window.location.search.split('?').length > 1) {
+                var params = window.location.search.split('?')[1].split('&');
+                for (var i = 0; i < params.length; i++) {
+                    var key = params[i].split('=')[0];
+                    var value = decodeURIComponent(params[i].split('=')[1]);
+                    queryString[key] = value;
+                }
+            }
+        }
+        if (queryString["list"] != null && queryString["list1"] != null) {
+            var data = "<u>Compare Variables</u><br /><br />";
+            data += "<b>Variable 1:</b> " + queryString["list"] + " <b>Variable 2:</b> " + queryString["alllist"].val();
+            $("#lblData").html(data);
+            console.log("This is Value", data);
 
 
+        }
+    });
+</script>
 <script>
 
-// set the dimensions and margins of the graph
-var margin = {top: 10, right: 30, bottom: 30, left: 60},
-    width = 460 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
+    // set the dimensions and margins of the graph
+    var margin = {top: 10, right: 30, bottom: 40, left: 50},
+        width = 1120 - margin.left - margin.right,
+        height = 800 - margin.top - margin.bottom;
 
-// append the svg object to the body of the page
-var svg = d3.select("#my_dataviz")
-  .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
+    // append the svg object to the body of the page
+    var svg = d3.select("#my_dataviz")
+        .append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform",
+            "translate(" + margin.left + "," + margin.top + ")")
 
-//Read the data
-d3.csv("final_output(24-06-2021).csv", function(data) {
-console.log(data);
-  // Add X axis
-  var x = d3.scaleLinear()
-    .domain([3000, 90000])
-    .range([ 0, width ]);
-  var xAxis = svg.append("g")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x));
+    // Add the grey background that makes ggplot2 famous
+    svg
+        .append("rect")
+        .attr("x",2000)
+        .attr("y",1500)
+        .attr("height", height)
+        .attr("width", height)
+        .style("fill", "EBEBEB")
 
-  // Add Y axis
-  var y = d3.scaleLinear()
-    .domain([1000, 90000])
-    .range([ height, 0]);
-  svg.append("g")
-    .call(d3.axisLeft(y));
+    //Read the data
+    d3.csv("final_output(24-06-2021).csv", function(data) {
 
-  // Add dots
-  svg.append('g')
-    .selectAll("dot")
-    .data(data)
-    .enter()
-    .append("circle")
-      .attr("cx", function (d) { return x(d.Avg_Tcase); } )
-      .attr("cy", function (d) { return y(d.Avg_Ncase); } )
-      .attr("r", 5)
-      .style("fill", "#69b3a2" )
+        // Add X axis
+        var x = d3.scaleLinear()
+            .domain([0, 800000])
+            .range([ 0, width ])
+             svg.append("g")
+            .attr("transform", "translate(0," + height + ")")
+            .call(d3.axisBottom(x).tickSize(-height*1.3).ticks(10))
+            .select(".domain").remove()
 
+        // Add Y axis
+        var y = d3.scaleLinear()
+            .domain([0, 15000])
+            .range([ height, 0])
+            .nice()
+        svg.append("g")
+            .call(d3.axisLeft(y).tickSize(-width*1.3).ticks(7))
+            .select(".domain").remove()
 
-  // A function that update the plot for a given xlim value
-  function updatePlot() {
+        // Customization
+        svg.selectAll(".tick line").attr("stroke", "white")
 
-    // Get the value of the button
-    xlim = this.value
+        // Add X axis label:
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("x", width/2 + margin.left)
+            .attr("y", height + margin.top + 20)
+            .text(queryString["list"]);
 
-    // Update X axis
-    x.domain([3,xlim])
-    xAxis.transition().duration(1000).call(d3.axisBottom(x))
+        // Y axis label:
+        svg.append("text")
+            .attr("text-anchor", "end")
+            .attr("transform", "rotate(-90)")
+            .attr("y", -margin.left + 20)
+            .attr("x", -margin.top - height/2 + 20)
+            .text(queryString["list1"])
 
-    // Update chart
-    svg.selectAll("circle")
-       .data(data)
-       .transition()
-       .duration(1000)
-       .attr("cx", function (d) { return x(d.Avg_Tcase); } )
-       .attr("cy", function (d) { return y(d.Avg_Ncase); } )
-  }
+        // Color scale: give me a specie name, I return a color
+        var color = d3.scaleOrdinal()
+            .domain(["new_cases", "new_deaths", "total_cases","#total_deaths" ])
+            .range([ "#F8766D", "#00BA38", "#619CFF","#F8766D"])
 
-  // Add an event listener to the button created in the html part
-  d3.select("#buttonXlim").on("input", updatePlot )
+        // Add dots
+        svg.append('g')
+            .selectAll("dot")
+            .data(data)
+            .enter()
+            .append("circle")
+            .attr("cx", function (arr) { return x(arr.total_cases); } )
+            .attr("cy", function (arr) { return y(arr.total_deaths); } )
+            .attr("r", 2)
+            .style("fill", function (arr) { return color(arr.country) } )
 
-})
+    })
 
 </script>
+<body>
+
+</body>

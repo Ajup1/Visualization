@@ -1,11 +1,20 @@
 import csv
 
-with open('C:/Users/test/Documents/R_projects/homework/rdu-weather-history.csv', "r") as csvfile:
-data = csv.reader(csvfile, delimiter=';')
-minVal, maxVal = [], []
-for i in data:
-minVal.append(i[1])
-maxVal.append(i[2])
+mydelimeter = csv.excel()
+mydelimeter.delimiter=";"
+myfile = open("htdocs/Covid-19_Visualization-Month/final_output(24-06-2021).csv")
+myfile.readline()
+myreader=csv.reader(myfile,mydelimeter)
+mywind,mydate=[],[]
+minTemp, maxTemp = [],[]
 
-print min(minVal)
-print max(maxVal)
+for row in myreader:
+  #  print(row[1],row[2])
+    try:
+        minTemp.append(float(row[1]))
+        maxTemp.append(float(row[2]))
+    except ValueError:
+        print ("error","on line",row)
+
+print ("min value element : ", min(minTemp))
+print ("max value element : ", max(maxTemp))

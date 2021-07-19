@@ -64,6 +64,7 @@
     }
 </style>
 <body>
+
 <button id="reset" style="display: none;">Reset</button>
 
 <script src="d3.min.js"></script>
@@ -72,26 +73,68 @@
 <link rel="stylesheet" type="text/css" href="css/d3.parcoords.css">
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="d3.parcoords.js"></script>
+<!--//send value to next page-->
 
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
 <h2>-Drag around axis to begin brush. -Double Click on label to rotate axis. -Click on country alpbhabet to see the
     country names -Hover on each date point to select specific date.</h2>
-<input type="file" id="uploader">
+
+<input type="file" id="uploader" value="">
+
 <!--<button id="hideticks">Hide Ticks</button>-->
 <button id="hide-ticks">Hide Ticks</button>
 <button id="show-ticks">Show Ticks</button>
-<button id="dark-theme">Dark</button>
-<button id="light-theme">Light</button>
+<button title="Zoom in on selected data" id="keep-data">Keep</button>
+<button id="3dayavg-data">Filter Row</button>
+<script type="text/javascript">
+
+</script>
+
+<form>
+    <select name="list" value="alllist" id="select_list" onclick="myFunction();">
+    </select>
+    <select name="list2" value="alllist" id="select_row">
+    </select>
+    <select name="list1" id="select_list1" accesskey="target">
+    </select>
+
+
+
+    <script>
+        function myFunction(){
+            var ddl = document.getElementById("select_list");
+            console.log("this",ddl)
+            var selectedValue = ddl.options[ddl.selectedIndex].value;
+            if (selectedValue != " ")
+            {
+                alert("Please select a card type");
+            }
+        };
+    </script>
+<!--    <input type=button onClick="parent.location='Scatter.html'"-->
+<!--           value='click here for Scatter Plot'>-->
+    <input type="button" id="btnQueryString" value="Send" />
+    <script type="text/javascript">
+        $(function () {
+            $("#btnQueryString").bind("click", function () {
+                var url = "SMain.html?list=" + encodeURIComponent($("#select_list").val()) + "&list1=" + encodeURIComponent($("#select_list1").val());
+                window.location.href = url;
+            });
+        });
+    </script>
+</form>
 <div id="example" class="parcoords" style="font-family: Big Caslon" ;>
 </div>
 </div>
 <div>
-    <div id="grid">
 
-
+    <div id="grid" >
     </div>
     <div id="pager"></div>
 
 <script>
+
+
     d3.select("#hide-ticks")
         .on("click", function() {
             d3.selectAll(".axis g").style("display", "none");
@@ -108,10 +151,7 @@
             d3.select("body").attr("class", "dark");
         });
 
-    d3.select("#light-theme")
-        .on("click", function() {
-            d3.select("body").attr("class", null);
-        });
+
 
     var colors = {
         "A": [28,100,52],
@@ -145,17 +185,19 @@
         function changeVisibility() {
             document.getElementById("grid").style.visibility = "hidden";
         }
-
+        var headers;
+        var rows;
         var data;
         var contents;
         var filterdFlag = false;
         var clicked_country;
 
+        d3.select("#keep-data").on("click", keep_data);
+
         var parcoords = d3.parcoords()("#example")
             .alpha(0.4)
             .mode("queue") // progressive rendering
             .height(d3.max([document.body.clientHeight - 190, 200]))
-
             .margin({
                 top: 20,
                 left: 0,
@@ -346,7 +388,7 @@
             // Reset
 
             document.getElementById("reset").addEventListener("click", handleResetClicked)
-
+//For Country axis to have different font
             allTicks = document.querySelectorAll(".tick text");
             for (var i = 0, max = allTicks.length; i < max; i++) {
                 allTicks[i].addEventListener("click", onClickTick);
@@ -361,17 +403,7 @@
                 resetSelectedCountryAlphabet()
                 clicked_country = null
             }
-            //hide tick text
-            // document.getElementById("hideticks").addEventListener("click", handleTick)
-            // function handleTick()
-            // {
-            //     d3.selectAll(".dimension")
-            //         .filter(function(d) { return d == "total_cases" || d == "new_cases" || d == "total_deaths" || d == "new_deaths" || d == "total_tests" || d == "total_vaccinations" || d == "vaccinated" || d == "fully_vaccinated" | d == "population"; })
-            //         .selectAll(".tick text")
-            //         .remove();
-            // }
-            // document.getElementById("hideticks").style.display = "block";
-            //
+
 
             function resetSelectedCountryAlphabet() {
 
@@ -397,7 +429,7 @@
 
             function onClickTick() {
                 resetSelectedCountryAlphabet();
-                console.log("This is the one clicked:", this.innerHTML, (/[\W\S_]/).test(this.innerHTML));
+               // console.log("This is the one clicked:", this.innerHTML, (/[\W\S_]/).test(this.innerHTML));
                 const innerLabel = this.innerHTML;
                 if ((/[\W\S_]/).test(innerLabel) && innerLabel.length == 1) {
                     data = d3.csv.parse(contents);
@@ -415,13 +447,13 @@
                     clicked_country = innerLabel;
                     
                 }
-                console.log("clicked", clicked_country);
+                //console.log("clicked", clicked_country);
                 //if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
                 if (clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 4 && innerLabel.split("-")[1].length == 2) {
-                    console.log("clicked on date", innerLabel);
+                    //console.log("clicked on date", innerLabel);
                     data = d3.csv.parse(contents);
                     dataToFilter = data;
-                    console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
+                  //  console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
                     const country_filtered = dataToFilter.filter(d => d.Country === clicked_country) || [];
                     parallelCoordinates(country_filtered.filter(d => d.A_Date === innerLabel), true);
                     parcoords.updateAxes();
@@ -437,80 +469,6 @@
                 console.log(document.getElementById("reset"));
                 document.getElementById("reset").style.display = "block";
 
-                parcoords.color(function (d) {
-                    console.log(d.A_Date);
-                    // d corresponds to the individual data object
-
-                    if (d.A_Date == "2020-01-15")
-                        return "light cyan";
-                    if (d.A_Date == "2020-02-15")
-                        return "dark turquoise";
-                    if (d.A_Date == "2020-04-15")
-                        return "turquoise";
-                    if (d.A_Date == '2020-03-15')
-                        return "orange";
-                    if (d.A_Date == "2020-05-15")
-                        return "red-orange";
-                    if (d.A_Date == '2020-06-15')
-                        return "red";
-                    if (d.A_Date == '2020-07-15')
-                        return "red-violet";
-                    if (d.A_Date == '2020-08-15')
-                        return "violet";
-                    if (d.A_Date == '2020-09-15')
-                        return "blue-violet";
-                    if (d.A_Date == '2020-10-15')
-                        return "blue";
-                    if (d.A_Date == '2020-11-15')
-                        return "maroon";
-                    if (d.A_Date == '2020-12-15')
-                        return "blue-green";
-                    if (d.A_Date == "2021-01-15")
-                        return "green";
-                    if (d.A_Date == "2021-02-15")
-                        return "sky blue";
-                    if (d.A_Date == '2021-03-15')
-                        return "midnight blue";
-                    if (d.A_Date == "2021-05-15")
-                        return "navy";
-                    if (d.Date == '2021-01-20')
-                        return "orange";
-                    if (d.Date == '2021-01-15')
-                        return "pink";
-                    if (d.Date == '2021-01-30')
-                        return "maroon";
-                    if (d.Date == "2020-01-05")
-                        return "plum";
-                    if (d.Date == "2021-01-10")
-                        return "tan";
-                    if (d.Date == '2021-01-15')
-                        return "sienna";
-                    if (d.Date == '2021-01-25')
-                        return "black";
-
-                    if (d.Date == '2021-01-20')
-                        return "orange";
-                    if (d.Date == '2021-01-15')
-                        return "pink";
-                    if (d.Date == '2021-01-30')
-                        return "maroon";
-                    if (d.Date == '2021-04-20')
-                        return "orange";
-                    if (d.Date == '2021-04-15')
-                        return "pink";
-                    if (d.Date == '2021-04-30')
-                        return "maroon";
-                    if (d.Date == "2020-04-05")
-                        return "plum";
-                    if (d.Date == "2021-04-10")
-                        return "tan";
-                    if (d.Date == '2021-04-15')
-                        return "sienna";
-                    if (d.Date == '2021-04-25')
-                        return "black";
-                    else
-                        return "green";
-                });
 
             }
         };
@@ -519,10 +477,41 @@
         var uploader = document.getElementById("uploader");
         var reader = new FileReader();
 
+        reader.readAsText(document.getElementById("uploader").files[0]);
+
         reader.onload = function (e) {
             contents = e.target.result;
+            // load header from csv
+            var arr = e.target.result.split("\n");
+            //console.log(arr);
+
+            const headers = arr[0].split(",");
+            var select = document.getElementById('select_list');
+            for (var i = 0; i<=headers.length; i++) {
+                var opt = document.createElement('option');
+                opt.value = headers[i];
+                opt.innerHTML = headers[i];
+                select.appendChild(opt);
+
+            }
+
+
+            //
+            var select1 = document.getElementById('select_list1');
+            //console.log("this is the full data", select1);
+            for (var i = 0; i<=headers.length; i++) {
+                var opt1 = document.createElement('option');
+                opt1.value = headers[i];
+                //console.log("this is the full header", opt1.value);
+                opt1.innerHTML = headers[i];
+                select1.appendChild(opt1);
+
+            }
+
             data = d3.csv.parse(contents);
-            console.log("Data", data);
+            //console.log("this is the full data", data);
+            var select2 = document.getElementById('select_row');
+           // console.log("Data", data);
             parallelCoordinates(data, false);
             // remove button, since re-initializing doesn't work for now
             uploader.parentNode.removeChild(uploader);
@@ -534,8 +523,53 @@
             var file = this.files[0];
             reader.readAsText(file);
         };
+        var width = document.body.clientWidth,
+            height = d3.max([document.body.clientHeight-540, 240]);
+
+        var m = [60, 0, 10, 0],
+            w = width - m[1] - m[3],
+            h = height - m[0] - m[2],
+            xscale = d3.scale.ordinal().rangePoints([0, w], 1),
+            dimensions
+            yscale = {};
 
 
+        // Remove all but selected from the dataset
+        function keep_data() {
+            new_data = actives();
+            if (new_data.length == 0) {
+                alert("I don't mean to be rude, but I can't let you remove all the data.\n\nTry removing some brushes to get your data back. Then click 'Keep' when you've selected data you want to look closer at.");
+                return false;
+            }
+            data = new_data;
+            rescale();
+        }
+
+        // Get polylines within extents
+        function actives() {
+            var actives = dimensions.filter(function(p) { return !yscale[p].brush.empty(); }),
+                extents = actives.map(function(p) { return yscale[p].brush.extent(); });
+
+            // filter extents and excluded groups
+            var selected = [];
+            data
+                .filter(function(d) {
+                    return !_.contains(excluded_groups, d.group);
+                })
+                .map(function(d) {
+                    return actives.every(function(p, i) {
+                        return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+                    }) ? selected.push(d) : null;
+                });
+
+            // free text search
+            var query = d3.select("#search")[0][0].value;
+            if (query > 0) {
+                selected = search(selected, query);
+            }
+
+            return selected;
+        }
     </script>
 
 </body>
