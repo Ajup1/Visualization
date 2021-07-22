@@ -27,8 +27,6 @@ d3.parcoords = function(config) {
     rotateLabels: false
   };
 
-  extend(__, config);
-
   if (config && config.dimensionTitles) {
     console.warn("dimensionTitles passed in config is deprecated. Add title to dimension object.");
     d3.entries(config.dimensionTitles).forEach(function(d) {
