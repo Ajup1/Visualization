@@ -1,1 +1,0 @@
-group = pandas.read_excel(r'group.xlsx')
