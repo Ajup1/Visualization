@@ -1,0 +1,603 @@
+<!doctype html>
+<title>Parallel Coordinates</title>
+<link rel="stylesheet" href="examples/lib/slickgrid/slick.grid.css" type="text/css"/>
+<link rel="stylesheet" href="examples/lib/slickgrid/jquery-ui-1.8.16.custom.css" type="text/css"/>
+<link rel="stylesheet" href="examples/lib/slickgrid/examples.css" type="text/css"/>
+<link rel="stylesheet" href="examples/lib/slickgrid/slick.pager.css" type="text/css"/>
+<script src="examples/lib/slickgrid/jquery-1.7.min.js"></script>
+<script src="examples/lib/slickgrid/jquery.event.drag-2.0.min.js"></script>
+<script src="examples/lib/slickgrid/slick.core.js"></script>
+<script src="examples/lib/slickgrid/slick.grid.js"></script>
+<script src="examples/lib/slickgrid/slick.pager.js"></script>
+<script src="examples/lib/slickgrid/slick.dataview.js"></script>
+<!-- End SlickGrid -->
+
+<link rel="stylesheet" type="text/css" href="d3.parcoords.css">
+<link rel="stylesheet" type="text/css" href="style.css">
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+
+<h1>Covid-19 <small>Parallel Coordinates Plot</small></h1>
+<p style="color: #a00;"></p>
+
+<style>
+    body, html {
+        margin: 0;
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        font-size: 10px;
+        font-family: "Big Caslon";
+    }
+
+    #grid, #pager {
+        position: fixed;
+        width: 100%;
+    }
+
+    #grid {
+        bottom: 0;
+        height: 100px;
+        padding-left: 3px;
+    }
+
+    /*#pager {
+      bottom: 106px;
+      height: 20px;
+    }*/
+    .slick-row:hover {
+        font-weight: bold;
+        color: #069;
+    }
+
+    #wrapper {
+        position: relative;
+        float: left;
+        top: 10px;
+        font-size: 1px;
+    }
+
+    #tooltip {
+        font-size: 7px;
+        font-weight: bold;
+        color: black;
+    }
+</style>
+<body>
+<button id="reset" style="display: none;">Reset</button>
+
+<script src="d3.min.js"></script>
+<script src="d3.parcoords.js"></script>
+<script src="examples/lib/divgrid.js"></script>
+<link rel="stylesheet" type="text/css" href="css/d3.parcoords.css">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="d3.parcoords.js"></script>
+
+<h2>-Drag around axis to begin brush. -Double Click on label to rotate axis. -Click on country alpbhabet to see the
+    country names -Hover on each date point to select specific date.</h2>
+<input type="file" id="uploader">
+<!--<button id="hideticks">Hide Ticks</button>-->
+<button id="hide-ticks">Hide Ticks</button>
+<button id="show-ticks">Show Ticks</button>
+<button onclick="zoom-plots()">Keep</button>
+<button id="3dayavg-data">Filter Row</button>
+<script type="text/javascript">
+    function goToNewPage()
+    {
+        var url = document.getElementById('list').value;
+        if(url != 'none') {
+            window.location = url;
+        }
+    }
+</script>
+<form>
+    <select name="list" id="list" accesskey="target">
+        <option value='none' selected>Average Option</option>
+        <option value="3dayAverage.html">3 Day Average</option>
+        <option value="5dayAverage.html">5 Day Average</option>
+
+    </select>
+    <input type=button value="Go" onclick="goToNewPage()" />
+</form>
+<div id="example" class="parcoords" style="font-family: Big Caslon" ;>
+</div>
+</div>
+<div>
+    <button id="show-grid">Show Grid</button>
+    <div id="grid">
+    </div>
+    <div id="pager"></div>
+
+<script>
+    d3.select("#hide-ticks")
+        .on("click", function() {
+            d3.selectAll(".axis g").style("display", "none");
+            d3.selectAll(".axis path").style("display", "none");
+        });
+
+    d3.select("#show-ticks")
+        .on("click", function() {
+            d3.selectAll(".axis g").style("display", "block");
+            d3.selectAll(".axis path").style("display", "block");
+        });
+    d3.select("#dark-theme")
+        .on("click", function() {
+            d3.select("body").attr("class", "dark");
+        });
+
+
+    var colors = {
+        "A": [28,100,52],
+        "B": [214,55,79],
+        "C": [185,56,73],
+        "D": [30,100,73],
+        "E": [359,69,49],
+        "F": [110,57,70],
+        "G": [120,56,40],
+        "H": [1,100,79],
+        "I": [271,39,57],
+        "J": [274,30,76],
+        "K": [10,30,42],
+        "L": [10,28,67],
+        "M": [318,65,67],
+        "N": [334,80,84],
+        "O": [37,50,75],
+        "P": [339,60,75],
+        "Q": [56,58,73],
+        "R": [339,60,49],
+        "S": [325,50,39],
+        "T": [20,49,49],
+        "U": [60,86,61],
+        "V": [185,80,45],
+        "W": [189,57,75],
+        "X": [41,75,61],
+        "Y": [204,70,41]
+    };
+</script>
+    <script>
+        function changeVisibility() {
+            document.getElementById("grid").style.visibility = "hidden";
+        }
+
+        var data;
+        var contents;
+        var filterdFlag = false;
+        var clicked_country;
+
+        var parcoords = d3.parcoords()("#example")
+            .alpha(0.4)
+            .mode("queue") // progressive rendering
+            .height(d3.max([document.body.clientHeight - 190, 200]))
+
+            .margin({
+                top: 20,
+                left: 0,
+                right: 0,
+                bottom: 89
+            });
+
+        // add instruction text
+        var instructions = "-Drag around axis to begin brush. -Click axis to clear brush. -Click a label to color data based on axis values. -Hover on each line to highlight."
+
+        // create chart from loaded data
+        function parallelCoordinates(data, countryName, Date) {
+            // slickgrid needs each data element to have an i
+
+            data.forEach(function (d, i) {
+                d.id = d.id || i;
+            });
+            var hiddenAxes;
+            if (countryName) {
+                hiddenAxes = ["CountryName", "continent", "id", "USA State", "iso_code", "stringency_index", 'total_cases_per_million', "new_cases_per_million", "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients", "icu_patients_per_million", "hosp_patients", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "new_cases_smoothed", "new_deaths_smoothed",
+                    "iso_code", "new_cases_smoothed", "new_deaths_smoothed", "total_cases_per_million", "new_cases_per_million", "new_cases_smoothed_per_million", "total_deaths_per_million", "new_deaths_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients", "icu_patients_per_million", "hosp_patients", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests", "total_tests", "total_tests_per_thousand", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "stringency_index", "population_density", "aged_65_older", "aged_70_older", "gdp_per_capita", "extreme_poverty", "cardiovasc_death_rate", "diabetes_prevalence", "female_smokers", "male_smokers", "handwashing_facilities", "hospital_beds_per_thousand", "life_expectancy", "human_development_index"]
+
+                parcoords
+                    .data(data)
+                    .hideAxis(hiddenAxes)
+                    .render()
+                    .composite("darken")
+                    .reorderable()
+                    .brushMode("1D-axes");
+
+            } else {
+                //hiddenAxes = ["CountryName", "id","USA State","Date"]
+                hiddenAxes = ["continent", "location", "id", "USA State", "Date", "iso_code", "stringency_index", 'total_cases_per_million', "new_cases_per_million", "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients_per_million", "hosp_patients", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "new_cases_smoothed", "new_deaths_smoothed", "CountryName",
+                    "iso_code", "new_cases_smoothed", "new_deaths_smoothed", "total_cases_per_million", "new_cases_per_million", "new_cases_smoothed_per_million", "total_deaths_per_million", "new_deaths_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients", "icu_patients_per_million", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests", "total_tests_per_thousand", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "stringency_index", "population_density", "median_age", "aged_65_older", "aged_70_older", "gdp_per_capita", "extreme_poverty", "cardiovasc_death_rate", "diabetes_prevalence", "female_smokers", "male_smokers", "handwashing_facilities", "hospital_beds_per_thousand", "life_expectancy", "human_development_index"]
+
+                parcoords
+                    .data(data)
+                    .hideAxis(hiddenAxes)
+                    .render()
+                    .composite("darken")
+                    .reorderable()
+                    .brushMode("1D-axes");
+            }
+
+
+            // Color scale: give me a specie name, I return a color
+            parcoords.color(function (d) {
+
+                if (d.Country == 'A')
+                    return "yellow";
+                if (d.Country == 'B')
+                    return "Green";
+                if (d.Country == 'C')
+                    return "turquoise";
+                if (d.Country == 'D')
+                    return "tan";
+                if (d.Country == 'E')
+                    return "sienna";
+                if (d.Country == 'F')
+                    return "plum";
+                if (d.Country == 'G')
+                    return "pink";
+                if (d.Country == 'H')
+                    return "orange";
+                if (d.Country == 'I')
+                    return "red";
+                if (d.Country == 'J')
+                    return "maroon";
+                if (d.Country == 'K')
+                    return "magenta";
+                if (d.Country == 'L')
+                    return "khaki";
+                if (d.Country == 'M')
+                    return "purple";
+                if (d.Country == 'N')
+                    return "navy";
+                if (d.Country == 'O')
+                    return "gold";
+                if (d.Country == 'P')
+                    return "cyan";
+                if (d.Country == 'Q')
+                    return "coral";
+                if (d.Country == 'R')
+                    return "brown";
+                if (d.Country == 'S')
+                    return "black";
+                if (d.Country == 'T')
+                    return "aquamarine";
+                if (d.Country == 'U')
+                    return "blue";
+                if (d.Country == 'V')
+                    return "violet";
+                if (d.Country == 'W')
+                    return "plum";
+                if (d.Country == 'X')
+                    return "pink";
+                if (d.Country == 'Y')
+                    return "orange";
+                if (d.Country == 'Z')
+                    return "navy";
+                else
+                    return "green";
+
+            });
+//date in ascending by YYYY-''
+//regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
+            var dateParse = d3.format("MM").parse;
+
+            d3.descending(dateParse);
+            // setting up grid
+            var column_keys = d3.keys(data[0]);
+            var columns = column_keys.map(function (key, i) {
+                return {
+                    id: key,
+                    name: key,
+                    field: key,
+                    sortable: true
+                }
+            });
+
+            var options = {
+                enableCellNavigation: true,
+                enableColumnReorder: false,
+                multiColumnSort: false
+            };
+
+            var dataView = new Slick.Data.DataView();
+            var grid = new Slick.Grid("#grid", dataView, columns, options);
+            //var pager = new Slick.Controls.Pager(dataView, grid, $("#pager"));
+
+            // wire up model events to drive the grid
+            dataView.onRowCountChanged.subscribe(function (e, args) {
+                grid.updateRowCount();
+                grid.render();
+            });
+
+            dataView.onRowsChanged.subscribe(function (e, args) {
+                grid.invalidateRows(args.rows);
+                grid.render();
+            });
+
+            // column sorting
+            var sortcol = column_keys[0];
+            var sortdir = 1;
+
+            function comparer(a, b) {
+                var x = a[sortcol], y = b[sortcol];
+                return (x == y ? 0 : (x > y ? 1 : -1));
+            }
+
+            // click header to sort grid column
+            grid.onSort.subscribe(function (e, args) {
+                sortdir = args.sortAsc ? 1 : -1;
+                sortcol = args.sortCol.field;
+
+                if ($.browser.msie && $.browser.version <= 8) {
+                    dataView.fastSort(sortcol, args.sortAsc);
+                } else {
+                    dataView.sort(comparer, args.sortAsc);
+                }
+            });
+
+            // highlight row in chart
+            grid.onMouseEnter.subscribe(function (e, args) {
+                var i = grid.getCellFromEvent(e).row;
+                var d = parcoords.brushed() || data;
+                parcoords.highlight([d[i]]);
+            });
+            grid.onMouseLeave.subscribe(function (e, args) {
+                parcoords.unhighlight();
+            });
+
+            // fill grid with data
+            gridUpdate(data);
+
+            // update grid on brush
+            parcoords.on("brush", function (d) {
+                gridUpdate(d);
+            });
+
+            function gridUpdate(data) {
+                dataView.beginUpdate();
+                dataView.setItems(data);
+                dataView.endUpdate();
+            };
+
+
+            // Reset
+
+            document.getElementById("reset").addEventListener("click", handleResetClicked)
+
+            allTicks = document.querySelectorAll(".tick text");
+            for (var i = 0, max = allTicks.length; i < max; i++) {
+                allTicks[i].addEventListener("click", onClickTick);
+                const innerLabel = allTicks[i].innerHTML;
+                if((/[a-zA-Z]/).test(innerLabel) && innerLabel.length == 1) {
+                    allTicks[i].style.fontSize = "20px";
+                    allTicks[i].style.fontFamily = '"Lucida Console", "Courier New", monospace';
+                }
+            }
+
+            function handleResetClicked() {
+                resetSelectedCountryAlphabet()
+                clicked_country = null
+            }
+            //hide tick text
+            // document.getElementById("hideticks").addEventListener("click", handleTick)
+            // function handleTick()
+            // {
+            //     d3.selectAll(".dimension")
+            //         .filter(function(d) { return d == "total_cases" || d == "new_cases" || d == "total_deaths" || d == "new_deaths" || d == "total_tests" || d == "total_vaccinations" || d == "vaccinated" || d == "fully_vaccinated" | d == "population"; })
+            //         .selectAll(".tick text")
+            //         .remove();
+            // }
+            // document.getElementById("hideticks").style.display = "block";
+            //
+
+            function resetSelectedCountryAlphabet() {
+
+                if (filterdFlag) {
+                    data = d3.csv.parse(contents);
+                    parallelCoordinates(data, false);
+                    parcoords.updateAxes();
+                    filterdFlag = false;
+                    document.getElementById("reset").style.display = "hidden";
+                }
+            }
+
+            function resetSelectedDate() {
+                if (filterdFlag) {
+                    data = d3.csv.parse(contents);
+                    parallelCoordinates(data, false);
+                    parcoords.updateAxes();
+                    filterdFlag = false;
+                    document.getElementById("reset").style.display = "hidden";
+
+                }
+            }
+
+            function onClickTick() {
+                resetSelectedCountryAlphabet();
+                console.log("This is the one clicked:", this.innerHTML, (/[\W\S_]/).test(this.innerHTML));
+                const innerLabel = this.innerHTML;
+                if ((/[\W\S_]/).test(innerLabel) && innerLabel.length == 1) {
+                    data = d3.csv.parse(contents);
+                    dataToFilter = data;
+                    console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
+                    parallelCoordinates(dataToFilter.filter(d => d.Country === innerLabel), true);
+                    //  parcoords.reset(d => d.CountryName);
+                    parcoords.updateAxes();
+                    document.getElementById("reset").style.display = "block";
+                    document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
+                    allTicks = document.querySelectorAll(".tick text");
+                    for (var i = 0, max = allTicks.length; i < max; i++) {
+                        allTicks[i].addEventListener("click", onClickTick);
+                    }
+                    clicked_country = innerLabel;
+
+                }
+                console.log("clicked", clicked_country);
+                //if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
+                if (clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 4 && innerLabel.split("-")[1].length == 2) {
+                    console.log("clicked on date", innerLabel);
+                    data = d3.csv.parse(contents);
+                    dataToFilter = data;
+                    console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
+                    const country_filtered = dataToFilter.filter(d => d.Country === clicked_country) || [];
+                    parallelCoordinates(country_filtered.filter(d => d.A_Date === innerLabel), true);
+                    parcoords.updateAxes();
+                    //on click evvent
+                    document.getElementById("reset").style.display = "block";
+                    document.getElementById("reset").addEventListener("click", resetSelectedDate)
+                    allTicks = document.querySelectorAll(".tick text");
+                    for (var i = 0, max = allTicks.length; i < max; i++) {
+                        allTicks[i].addEventListener("click", onClickTick);
+                    }
+                }
+                filterdFlag = true;
+                console.log(document.getElementById("reset"));
+                document.getElementById("reset").style.display = "block";
+
+                parcoords.color(function (d) {
+                    console.log(d.A_Date);
+                    // d corresponds to the individual data object
+
+                    if (d.A_Date == "2020-01-15")
+                        return "light cyan";
+                    if (d.A_Date == "2020-02-15")
+                        return "dark turquoise";
+                    if (d.A_Date == "2020-04-15")
+                        return "turquoise";
+                    if (d.A_Date == '2020-03-15')
+                        return "orange";
+                    if (d.A_Date == "2020-05-15")
+                        return "red-orange";
+                    if (d.A_Date == '2020-06-15')
+                        return "red";
+                    if (d.A_Date == '2020-07-15')
+                        return "red-violet";
+                    if (d.A_Date == '2020-08-15')
+                        return "violet";
+                    if (d.A_Date == '2020-09-15')
+                        return "blue-violet";
+                    if (d.A_Date == '2020-10-15')
+                        return "blue";
+                    if (d.A_Date == '2020-11-15')
+                        return "maroon";
+                    if (d.A_Date == '2020-12-15')
+                        return "blue-green";
+                    if (d.A_Date == "2021-01-15")
+                        return "green";
+                    if (d.A_Date == "2021-02-15")
+                        return "sky blue";
+                    if (d.A_Date == '2021-03-15')
+                        return "midnight blue";
+                    if (d.A_Date == "2021-05-15")
+                        return "navy";
+                    if (d.Date == '2021-01-20')
+                        return "orange";
+                    if (d.Date == '2021-01-15')
+                        return "pink";
+                    if (d.Date == '2021-01-30')
+                        return "maroon";
+                    if (d.Date == "2020-01-05")
+                        return "plum";
+                    if (d.Date == "2021-01-10")
+                        return "tan";
+                    if (d.Date == '2021-01-15')
+                        return "sienna";
+                    if (d.Date == '2021-01-25')
+                        return "black";
+
+                    if (d.Date == '2021-01-20')
+                        return "orange";
+                    if (d.Date == '2021-01-15')
+                        return "pink";
+                    if (d.Date == '2021-01-30')
+                        return "maroon";
+                    if (d.Date == '2021-04-20')
+                        return "orange";
+                    if (d.Date == '2021-04-15')
+                        return "pink";
+                    if (d.Date == '2021-04-30')
+                        return "maroon";
+                    if (d.Date == "2020-04-05")
+                        return "plum";
+                    if (d.Date == "2021-04-10")
+                        return "tan";
+                    if (d.Date == '2021-04-15')
+                        return "sienna";
+                    if (d.Date == '2021-04-25')
+                        return "black";
+                    else
+                        return "green";
+                });
+
+            }
+        };
+
+        // CSV Uploader
+        // var uploader = document.getElementById("uploader");
+        // var reader = new FileReader();
+        //
+        // reader.onload = function (e) {
+        //     contents = e.target.result;
+        //     data = d3.csv('3dayAverage.csv');
+        //     console.log("Data", data);
+        //     parallelCoordinates(data, false);
+        //     // remove button, since re-initializing doesn't work for now
+        //     uploader.parentNode.removeChild(uploader);
+        // };
+
+        // d3.csv('planet.csv', function(data) {
+        //     parcoords
+        //         .data(data)
+        //         .render()
+        //         .brushMode("1D-axes");  // enable brushing
+
+        uploader.addEventListener("change", handleFiles, false);
+
+        function handleFiles() {
+            var file = this.files[0];
+            reader.readAsText(file);
+        };
+        var width = document.body.clientWidth,
+            height = d3.max([document.body.clientHeight-540, 240]);
+
+        var m = [60, 0, 10, 0],
+            w = width - m[1] - m[3],
+            h = height - m[0] - m[2],
+            xscale = d3.scale.ordinal().rangePoints([0, w], 1),
+            yscale = {};
+
+        // Get polylines within extents
+        function actives() {
+            var actives = dimensions.filter(function(p) { return !yscale[p].brush.empty(); }),
+                extents = actives.map(function(p) { return yscale[p].brush.extent(); });
+
+            // filter extents and excluded groups
+            var selected = [];
+            data
+                .filter(function(d) {
+                    return !_.contains(excluded_groups, d.group);
+                })
+                .map(function(d) {
+                    return actives.every(function(p, i) {
+                        return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+                    }) ? selected.push(d) : null;
+                });
+
+            // free text search
+            var query = d3.select("#search")[0][0].value;
+            if (query > 0) {
+                selected = search(selected, query);
+            }
+
+            return selected;
+        }
+        // Remove all but selected from the dataset
+        function keep_data() {
+            Console.log("Test");
+            new_data = actives();
+            if (new_data.length == 0) {
+                alert("I don't mean to be rude, but I can't let you remove all the data.\n\nTry removing some brushes to get your data back. Then click 'Keep' when you've selected data you want to look closer at.");
+                return false;
+            }
+            data = new_data;
+            rescale();
+        }
+    </script>
+
+</body>

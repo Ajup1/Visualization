@@ -1,0 +1,832 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+
+<script src="http://underscorejs.org/underscore.js"></script>
+<link rel="stylesheet" href="examples/lib/slickgrid/slick.grid.css" type="text/css"/>
+<link rel="stylesheet" href="examples/lib/slickgrid/jquery-ui-1.8.16.custom.css" type="text/css"/>
+<link rel="stylesheet" href="examples/lib/slickgrid/examples.css" type="text/css"/>
+<link rel="stylesheet" href="examples/lib/slickgrid/slick.pager.css" type="text/css"/>
+<script src="examples/lib/slickgrid/jquery-1.7.min.js"></script>
+<script src="examples/lib/slickgrid/jquery.event.drag-2.0.min.js"></script>
+<script src="examples/lib/slickgrid/slick.core.js"></script>
+<script src="examples/lib/slickgrid/slick.grid.js"></script>
+<script src="examples/lib/slickgrid/slick.pager.js"></script>
+<script src="examples/lib/slickgrid/slick.dataview.js"></script>
+<!-- End SlickGrid -->
+
+<link rel="stylesheet" type="text/css" href="d3.parcoords.css">
+<link rel="stylesheet" type="text/css" href="style.css">
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script src="https://d3js.org/d3.v4.min.js"></script>
+<style>
+
+    svg {
+        font: 10px sans-serif;
+    }
+
+    .background path {
+        fill: none;
+        stroke: #ddd;
+        shape-rendering: crispEdges;
+    }
+
+    .foreground path {
+        fill: none;
+        stroke: steelblue;
+    }
+
+    .brush .extent {
+        fill-opacity: .3;
+        stroke: #fff;
+        shape-rendering: crispEdges;
+    }
+
+    .axis line,
+    .axis path {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+
+    .axis text {
+        text-shadow: 0 1px 0 #fff, 1px 0 0 #fff, 0 -1px 0 #fff, -1px 0 0 #fff;
+    }
+
+    button#exclude-data:hover {
+        color: #900;
+    }
+    body.dark {
+        background: #131313;
+        color: #e3e3e3;
+    }
+    a {
+        text-decoration: none;
+    }
+    .dark a {
+        color: #5ae;
+    }
+
+</style>
+<body>
+<script src="d3.min.js"></script>
+<script src="d3.parcoords.js"></script>
+<script src="examples/lib/divgrid.js"></script>
+<link rel="stylesheet" type="text/css" href="css/d3.parcoords.css">
+<script src="http://d3js.org/d3.v3.min.js"></script>
+<script src="d3.parcoords.js"></script>
+<div id="header">
+    <h1>Covid-19 <small>Parallel Coordinates Plot</small></h1>
+    <h5>-Drag around axis to begin brush. -Double Click on label to rotate axis. -Click on country alpbhabet to see the
+        country names -Hover on each date point to select specific date.</h5>
+
+    <div class="controls">
+        <strong id="rendered-count"></strong><strong id="selected-count"></strong>
+        <div class="fillbar"><div id="selected-bar"><div id="rendered-bar">&nbsp;</div></div></div>
+
+        <span class="settings">
+            <button id="reset" style="display: none;">Reset</button>
+    <button title="Zoom in on selected data" id="keep-data">Keep</button>
+    <button title="Remove selected data" id="exclude-data">Exclude</button>
+    <button title="Export data as CSV" id="export-data">Export</button>
+        <button id="hide-ticks">Hide Ticks</button>
+        <button id="show-ticks" disabled="disabled">Show Ticks</button>
+        <button id="dark-theme">Dark</button>
+        <button id="light-theme" disabled="disabled">Light</button>
+      </span>
+    </div>
+<script src="//d3js.org/d3.v3.min.js"></script>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+
+
+    <script>
+
+    var margin = {top: 30, right: 10, bottom: 10, left: 10},
+        width = 960 - margin.left - margin.right,
+        height = 500 - margin.top - margin.bottom;
+
+    var m = [60, 0, 10, 0],
+        w = width - m[1] - m[3],
+        h = height - m[0] - m[2]
+
+    var x = d3.scale.ordinal().rangePoints([0, width], 1),
+        y = {};
+
+
+    var line = d3.svg.line(),
+        axis = d3.svg.axis().orient("left"),
+        data,
+        background,
+        foreground,
+        brush_count = 0,
+        render_speed = 50,
+        excluded_groups = [];
+    var headers;
+    var rows;
+    var contents;
+    var filterdFlag = false;
+    var clicked_country;
+
+    var svg = d3.select("body").append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+    d3.csv("covid-Test.csv", function(error, covid) {
+        data = covid.map(function(d) {
+            // Extract the list of dimensions and create a scale for each.
+            x.domain(dimensions = d3.keys(covid[0]).filter(function (d) {
+                return d != "name" && (y[d] = d3.scale.linear()
+                    .domain(d3.extent(covid, function (p) {
+                        return +p[d];
+                    }))
+                    .range([height, 0]));
+            }));
+            return d;
+        });
+
+
+
+        // Add grey background lines for context.
+        background = svg.append("g")
+            .attr("class", "background")
+            .selectAll("path")
+            .data(covid)
+            .enter().append("path")
+            .attr("d", path);
+
+        // Add blue foreground lines for focus.
+        foreground = svg.append("g")
+            .attr("class", "foreground")
+            .selectAll("path")
+            .data(covid)
+            .enter().append("path")
+            .attr("d", path);
+
+        // Add a group element for each dimension.
+        var g = svg.selectAll(".dimension")
+            .data(dimensions)
+            .enter().append("g")
+            .attr("class", "dimension")
+            .attr("transform", function(d) { return "translate(" + x(d) + ")"; });
+
+        // Add an axis and title.
+        g.append("g")
+            .attr("class", "axis")
+            .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
+            .append("text")
+            .style("text-anchor", "middle")
+            .attr("y", -9)
+            .text(function(d) { return d; });
+
+        // Add and store a brush for each axis.
+        g.append("g")
+            .attr("class", "brush")
+            .each(function(d) { d3.select(this).call(y[d].brush = d3.svg.brush().y(y[d]).on("brush", brush)); })
+            .selectAll("rect")
+            .attr("x", -8)
+            .attr("width", 16);
+
+        // if (g < cars.length && selected.length > 0) {
+        //     d3.select("#keep-data").attr("disabled", null);
+        //     d3.select("#exclude-data").attr("disabled", null);
+        // } else {
+        //     d3.select("#keep-data").attr("disabled", "disabled");
+        //     d3.select("#exclude-data").attr("disabled", "disabled");
+        // };
+    });
+    // Reset
+
+    document.getElementById("reset").addEventListener("click", handleResetClicked)
+    //For Country axis to have different font
+    allTicks = document.querySelectorAll(".tick text");
+    for (var i = 0, max = allTicks.length; i < max; i++) {
+        allTicks[i].addEventListener("click", onClickTick);
+        const innerLabel = allTicks[i].innerHTML;
+        if((/[a-zA-Z]/).test(innerLabel) && innerLabel.length == 1) {
+            allTicks[i].style.fontSize = "20px";
+            allTicks[i].style.fontFamily = '"Lucida Console", "Courier New", monospace';
+        }
+    }
+    function handleResetClicked() {
+        resetSelectedCountryAlphabet()
+        clicked_country = null
+    }
+    function resetSelectedCountryAlphabet() {
+
+        if (filterdFlag) {
+            data = d3.csv.parse(contents);
+            parallelCoordinates(data, false);
+            parcoords.updateAxes();
+            filterdFlag = false;
+            document.getElementById("reset").style.display = "hidden";
+        }
+    }
+    // Returns the path for a given data point.
+    function path(d) {
+        return line(dimensions.map(function(p) { return [x(p), y[p](d[p])]; }));
+    }
+
+    // Handles a brush event, toggling the display of foreground lines.
+    function brush() {
+        var actives = dimensions.filter(function(p) { return !y[p].brush.empty(); }),
+            extents = actives.map(function(p) { return y[p].brush.extent(); });
+        foreground.style("display", function(d) {
+            return actives.every(function(p, i) {
+                return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+            }) ? null : "none";
+        });
+
+        // bold dimensions with label
+        d3.selectAll('.label')
+            .style("font-weight", function(dimension) {
+                if (_.include(actives, dimension)) return "2px";
+                return null;
+            });
+
+        // Get lines within extents
+        var selected = [];
+        data
+            .filter(function(d) {
+                return !_.contains(excluded_groups, d.group);
+            })
+            .map(function(d) {
+                return actives.every(function(p, dimension) {
+                    return extents[dimension][0] <= d[p] && d[p] <= extents[dimension][1];
+                }) ? selected.push(d) : null;
+            });
+        // update axes
+        d3.selectAll(".axis")
+            .each(function(d,i) {
+                // hide lines for better performance
+                d3.select(this).selectAll('line').style("display", "none");
+
+                // transition axis numbers
+                d3.select(this)
+                    .transition()
+                    .duration(720)
+                    .call(axis.scale(y[d]));
+
+                // bring lines back
+                d3.select(this).selectAll('line').transition().delay(800).style("display", null);
+
+                d3.select(this)
+                    .selectAll('text')
+                    .style('font-weight', null)
+                    .style('font-size', null)
+                    .style('display', null);
+            });
+
+    }
+
+    // transition ticks for reordering, rescaling and inverting
+    function update_ticks(d, extent) {
+        // update brushes
+        if (d) {
+            var brush_el = d3.selectAll(".brush")
+                .filter(function(key) { return key == d; });
+            // single tick
+            if (extent) {
+                // restore previous extent
+                brush_el.call(y[d].brush = d3.svg.brush().y(y[d]).extent(extent).on("brush", brush));
+            } else {
+                brush_el.call(y[d].brush = d3.svg.brush().y(y[d]).on("brush", brush));
+            }
+        } else {
+            // all ticks
+            d3.selectAll(".brush")
+                .each(function(d) { d3.select(this).call(y[d].brush = d3.svg.brush().y(y[d]).on("brush", brush)); })
+        }
+
+        brush_count++;
+
+        show_ticks();
+
+        // update axes
+        d3.selectAll(".axis")
+            .each(function(d,i) {
+                // hide lines for better performance
+                d3.select(this).selectAll('line').style("display", "none");
+
+                // transition axis numbers
+                d3.select(this)
+                    .transition()
+                    .duration(720)
+                    .call(axis.scale(y[d]));
+
+                // bring lines back
+                d3.select(this).selectAll('line').transition().delay(800).style("display", null);
+
+                d3.select(this)
+                    .selectAll('text')
+                    .style('font-weight', null)
+                    .style('font-size', null)
+                    .style('display', null);
+            });
+    }
+    // Rescale to new dataset domain
+    function rescale() {
+        // reset yscales, preserving inverted state
+        dimensions.forEach(function(d,i) {
+            if (y[d].inverted) {
+                y[d] = d3.scale.linear()
+                    .domain(d3.extent(data, function(p) { return +p[d]; }))
+                    .range([0, h]);
+                y[d].inverted = true;
+            } else {
+                y[d] = d3.scale.linear()
+                    .domain(d3.extent(data, function(p) { return +p[d]; }))
+                    .range([h, 0]);
+            }
+        });
+
+        update_ticks();
+
+        // Render selected data
+        paths(data, foreground, brush_count);
+    }
+
+    // render a set of polylines on a canvas
+    function paths(selected, ctx, count) {
+        var n = selected.length,
+            i = 0,
+            opacity = d3.min([2/Math.pow(n,0.3),1]),
+            timer = (new Date()).getTime();
+
+        //selection_stats(opacity, n, data.length)
+
+        shuffled_data = _.shuffle(selected);
+
+        data_table(shuffled_data.slice(0,25));
+
+        ctx.clearRect(0,0,w+1,h+1);
+
+        // render all lines until finished or a new brush event
+        function animloop(){
+            if (i >= n || count < brush_count) return true;
+            var max = d3.min([i+render_speed, n]);
+            render_range(shuffled_data, i, max, opacity);
+            render_stats(max,n,render_speed);
+            i = max;
+            timer = optimize(timer);  // adjusts render_speed
+        };
+
+        d3.timer(animloop);
+    }
+    // simple data table
+    function data_table(sample) {
+        // sort by first column
+        var sample = sample.sort(function(a,b) {
+            var col = d3.keys(a)[0];
+            return a[col] < b[col] ? -1 : 1;
+        });
+
+        var table = d3.select("#food-list")
+            .html("")
+            .selectAll(".row")
+            .data(sample)
+            .enter().append("div")
+            .on("mouseover", highlight)
+            .on("mouseout", unhighlight);
+
+        table
+            .append("span")
+            .attr("class", "color-block")
+            .style("background", function(d) { return color(d.group,0.85) })
+
+        table
+            .append("span")
+            .text(function(d) { return d.name; })
+    }
+    // Get polylines within extents
+    function actives() {
+        var actives = dimensions.filter(function (p) {
+                return !y[p].brush.empty();
+            }),
+            extents = actives.map(function (p) {
+                return y[p].brush.extent();
+            });
+
+        // filter extents and excluded groups
+        var selected = [];
+        data
+             .filter(function (d) {
+                return !_.contains(excluded_groups, d.group);
+             })
+            .map(function (d) {
+                return actives.every(function (p, i) {
+                    return extents[i][0] <= d[p] && d[p] <= extents[i][1];
+                }) ? selected.push(d) : null;
+            });
+
+
+
+        return selected;
+    }
+    // Highlight single polyline
+    function highlight(d) {
+        d3.select("#foreground").style("opacity", "0.25");
+        d3.selectAll(".row").style("opacity", function(p) { return (d.group == p) ? null : "0.3" });
+        path(d, highlighted, color(d.group,1));
+    }
+
+    // Remove highlight
+    function unhighlight() {
+        d3.select("#foreground").style("opacity", null);
+        d3.selectAll(".row").style("opacity", null);
+        highlighted.clearRect(0,0,w,h);
+    }
+    function invert_axis(d) {
+        // save extent before inverting
+        if (!y[d].brush.empty()) {
+            var extent = y[d].brush.extent();
+        }
+        if (y[d].inverted == true) {
+            y[d].range([h, 0]);
+            d3.selectAll('.label')
+                .filter(function(p) { return p == d; })
+                .style("text-decoration", null);
+            y[d].inverted = false;
+        } else {
+            y[d].range([0, h]);
+            d3.selectAll('.label')
+                .filter(function(p) { return p == d; })
+                .style("text-decoration", "underline");
+            y[d].inverted = true;
+        }
+        return extent;
+    }
+    // Export data
+    function export_csv(covid) {
+        var keys = d3.keys(covid);
+        var rows = actives().map(function(row) {
+            return keys.map(function(k) { return row[k]; })
+        });
+        var csv = d3.csv.format([keys].concat(rows)).replace(/\n/g,"<br/>\n");
+        var styles = "<style>body { font-family: sans-serif; font-size: 12px; }</style>";
+        window.open("text/csv").document.write(styles + csv);
+    }
+    // Remove all but selected from the dataset
+    function keep_data() {
+        new_data = actives();
+         console.log("This is data range", new_data);
+        if (new_data.length == 0) {
+            alert("Range not selected.\n\nTry removing some brushes to get your data back. Then click 'Keep' when you've selected data you want to look closer at.");
+            return false;
+        }
+        data = new_data;
+        rescale();
+    }
+    // Get polylines within extents
+
+
+    // Exclude selected from the dataset
+    function exclude_data() {
+        new_data = _.difference(data, actives());
+        if (new_data.length == 0) {
+            alert("Not Selected.\n\nTry selecting just a few data points then clicking 'Exclude'.");
+            return false;
+        }
+        data = new_data;
+        rescale();
+    }
+
+    function remove_axis(d,g) {
+        dimensions = _.difference(dimensions, [d]);
+        xscale.domain(dimensions);
+        g.attr("transform", function(p) { return "translate(" + position(p) + ")"; });
+        g.filter(function(p) { return p == d; }).remove();
+        update_ticks();
+    }
+
+    d3.select("#keep-data").on("click", keep_data);
+    d3.select("#exclude-data").on("click", exclude_data);
+    d3.select("#export-data").on("click", export_csv);
+    d3.select("#search").on("keyup", brush);
+    // Appearance toggles
+    d3.select("#hide-ticks").on("click", hide_ticks);
+    d3.select("#show-ticks").on("click", show_ticks);
+    d3.select("#dark-theme").on("click", dark_theme);
+    d3.select("#light-theme").on("click", light_theme);
+
+    function hide_ticks() {
+        d3.selectAll(".axis g").style("display", "none");
+        //d3.selectAll(".axis path").style("display", "none");
+        d3.selectAll(".background").style("visibility", "hidden");
+        d3.selectAll("#hide-ticks").attr("disabled", "disabled");
+        d3.selectAll("#show-ticks").attr("disabled", null);
+    };
+
+    function show_ticks() {
+        d3.selectAll(".axis g").style("display", null);
+        //d3.selectAll(".axis path").style("display", null);
+        d3.selectAll(".background").style("visibility", null);
+        d3.selectAll("#show-ticks").attr("disabled", "disabled");
+        d3.selectAll("#hide-ticks").attr("disabled", null);
+    };
+
+    function dark_theme() {
+        d3.select("body").attr("class", "dark");
+        d3.selectAll("#dark-theme").attr("disabled", "disabled");
+        d3.selectAll("#light-theme").attr("disabled", null);
+    }
+
+    function light_theme() {
+        d3.select("body").attr("class", null);
+        d3.selectAll("#light-theme").attr("disabled", "disabled");
+        d3.selectAll("#dark-theme").attr("disabled", null);
+    }
+
+    function search(selection,str) {
+        pattern = new RegExp(str,"i")
+        return _(selection).filter(function(d) { return pattern.exec(d.name); });
+    }
+    function resetSelectedCountryAlphabet() {
+
+        if (filterdFlag) {
+            data = d3.csv.parse(contents);
+            parallelCoordinates(data, false);
+            parcoords.updateAxes();
+            filterdFlag = false;
+            document.getElementById("reset").style.display = "hidden";
+        }
+    }
+
+    function resetSelectedDate() {
+        if (filterdFlag) {
+            data = d3.csv.parse(contents);
+            parallelCoordinates(data, false);
+            parcoords.updateAxes();
+            filterdFlag = false;
+            document.getElementById("reset").style.display = "hidden";
+
+        }
+    }
+    // create chart from loaded data
+    function parallelCoordinates(data, countryName, Date) {
+        // slickgrid needs each data element to have an i
+
+        data.forEach(function (d, i) {
+            d.id = d.id || i;
+        });
+        var hiddenAxes;
+        if (countryName) {
+            hiddenAxes = ["CountryName", "continent", "id", "USA State", "iso_code", "stringency_index", 'total_cases_per_million', "new_cases_per_million", "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients", "icu_patients_per_million", "hosp_patients", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "new_cases_smoothed", "new_deaths_smoothed",
+                "iso_code", "new_cases_smoothed", "new_deaths_smoothed", "total_cases_per_million", "new_cases_per_million", "new_cases_smoothed_per_million", "total_deaths_per_million", "new_deaths_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients", "icu_patients_per_million", "hosp_patients", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests", "total_tests", "total_tests_per_thousand", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "stringency_index", "population_density", "aged_65_older", "aged_70_older", "gdp_per_capita", "extreme_poverty", "cardiovasc_death_rate", "diabetes_prevalence", "female_smokers", "male_smokers", "handwashing_facilities", "hospital_beds_per_thousand", "life_expectancy", "human_development_index"]
+
+            parcoords
+                .data(data)
+                .hideAxis(hiddenAxes)
+                .render()
+                .composite("darken")
+                .reorderable()
+                .brushMode("1D-axes");
+
+        } else {
+            //hiddenAxes = ["CountryName", "id","USA State","Date"]
+            hiddenAxes = ["continent", "location", "id", "USA State", "Date", "iso_code", "stringency_index", 'total_cases_per_million', "new_cases_per_million", "new_cases_smoothed_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients_per_million", "hosp_patients", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "new_cases_smoothed", "new_deaths_smoothed", "CountryName",
+                "iso_code", "new_cases_smoothed", "new_deaths_smoothed", "total_cases_per_million", "new_cases_per_million", "new_cases_smoothed_per_million", "total_deaths_per_million", "new_deaths_per_million", "new_deaths_smoothed_per_million", "reproduction_rate", "icu_patients", "icu_patients_per_million", "hosp_patients_per_million", "weekly_icu_admissions", "weekly_icu_admissions_per_million", "weekly_hosp_admissions", "weekly_hosp_admissions_per_million", "new_tests", "total_tests_per_thousand", "new_tests_per_thousand", "new_tests_smoothed", "new_tests_smoothed_per_thousand", "positive_rate", "tests_per_case", "tests_units", "new_vaccinations", "new_vaccinations_smoothed", "total_vaccinations_per_hundred", "people_vaccinated_per_hundred", "people_fully_vaccinated_per_hundred", "new_vaccinations_smoothed_per_million", "stringency_index", "population_density", "median_age", "aged_65_older", "aged_70_older", "gdp_per_capita", "extreme_poverty", "cardiovasc_death_rate", "diabetes_prevalence", "female_smokers", "male_smokers", "handwashing_facilities", "hospital_beds_per_thousand", "life_expectancy", "human_development_index"]
+
+            parcoords
+                .data(data)
+                .hideAxis(hiddenAxes)
+                .render()
+                .composite("darken")
+                .reorderable()
+                .brushMode("1D-axes");
+        }
+
+
+        // Color scale: give me a specie name, I return a color
+        parcoords.color(function (d) {
+
+            if (d.Country == 'A')
+                return "yellow";
+            if (d.Country == 'B')
+                return "Green";
+            if (d.Country == 'C')
+                return "turquoise";
+            if (d.Country == 'D')
+                return "tan";
+            if (d.Country == 'E')
+                return "sienna";
+            if (d.Country == 'F')
+                return "plum";
+            if (d.Country == 'G')
+                return "pink";
+            if (d.Country == 'H')
+                return "orange";
+            if (d.Country == 'I')
+                return "red";
+            if (d.Country == 'J')
+                return "maroon";
+            if (d.Country == 'K')
+                return "magenta";
+            if (d.Country == 'L')
+                return "khaki";
+            if (d.Country == 'M')
+                return "purple";
+            if (d.Country == 'N')
+                return "navy";
+            if (d.Country == 'O')
+                return "gold";
+            if (d.Country == 'P')
+                return "cyan";
+            if (d.Country == 'Q')
+                return "coral";
+            if (d.Country == 'R')
+                return "brown";
+            if (d.Country == 'S')
+                return "black";
+            if (d.Country == 'T')
+                return "aquamarine";
+            if (d.Country == 'U')
+                return "blue";
+            if (d.Country == 'V')
+                return "violet";
+            if (d.Country == 'W')
+                return "plum";
+            if (d.Country == 'X')
+                return "pink";
+            if (d.Country == 'Y')
+                return "orange";
+            if (d.Country == 'Z')
+                return "navy";
+            else
+                return "green";
+
+        });
+//date in ascending by YYYY-''
+//regex = "^[0-3]?[0-9]/[0-3]?[0-9]/(?:[0-9]{2})?[0-9]{2}$";
+        var dateParse = d3.format("MM").parse;
+
+        d3.descending(dateParse);
+        // setting up grid
+        var column_keys = d3.keys(data[0]);
+        var columns = column_keys.map(function (key, i) {
+            return {
+                id: key,
+                name: key,
+                field: key,
+                sortable: true
+            }
+        });
+
+        var options = {
+            enableCellNavigation: true,
+            enableColumnReorder: false,
+            multiColumnSort: false
+        };
+
+        var dataView = new Slick.Data.DataView();
+        var grid = new Slick.Grid("#grid", dataView, columns, options);
+        //var pager = new Slick.Controls.Pager(dataView, grid, $("#pager"));
+
+        // wire up model events to drive the grid
+        dataView.onRowCountChanged.subscribe(function (e, args) {
+            grid.updateRowCount();
+            grid.render();
+        });
+
+        dataView.onRowsChanged.subscribe(function (e, args) {
+            grid.invalidateRows(args.rows);
+            grid.render();
+        });
+
+        // column sorting
+        var sortcol = column_keys[0];
+        var sortdir = 1;
+
+        function comparer(a, b) {
+            var x = a[sortcol], y = b[sortcol];
+            return (x == y ? 0 : (x > y ? 1 : -1));
+        }
+
+        // click header to sort grid column
+        grid.onSort.subscribe(function (e, args) {
+            sortdir = args.sortAsc ? 1 : -1;
+            sortcol = args.sortCol.field;
+
+            if ($.browser.msie && $.browser.version <= 8) {
+                dataView.fastSort(sortcol, args.sortAsc);
+            } else {
+                dataView.sort(comparer, args.sortAsc);
+            }
+        });
+
+        // highlight row in chart
+        grid.onMouseEnter.subscribe(function (e, args) {
+            var i = grid.getCellFromEvent(e).row;
+            var d = parcoords.brushed() || data;
+            parcoords.highlight([d[i]]);
+        });
+        grid.onMouseLeave.subscribe(function (e, args) {
+            parcoords.unhighlight();
+        });
+
+        // fill grid with data
+        gridUpdate(data);
+
+        // update grid on brush
+        parcoords.on("brush", function (d) {
+            gridUpdate(d);
+        });
+
+        function gridUpdate(data) {
+            dataView.beginUpdate();
+            dataView.setItems(data);
+            dataView.endUpdate();
+        };
+
+
+        // Reset
+
+        document.getElementById("reset").addEventListener("click", handleResetClicked)
+        //For Country axis to have different font
+        allTicks = document.querySelectorAll(".tick text");
+        for (var i = 0, max = allTicks.length; i < max; i++) {
+            allTicks[i].addEventListener("click", onClickTick);
+            const innerLabel = allTicks[i].innerHTML;
+            if((/[a-zA-Z]/).test(innerLabel) && innerLabel.length == 1) {
+                allTicks[i].style.fontSize = "20px";
+                allTicks[i].style.fontFamily = '"Lucida Console", "Courier New", monospace';
+            }
+        }
+
+        function handleResetClicked() {
+            resetSelectedCountryAlphabet()
+            clicked_country = null
+        }
+
+
+        function resetSelectedCountryAlphabet() {
+
+            if (filterdFlag) {
+                data = d3.csv.parse(contents);
+                parallelCoordinates(data, false);
+                parcoords.updateAxes();
+                filterdFlag = false;
+                document.getElementById("reset").style.display = "hidden";
+            }
+        }
+
+        function resetSelectedDate() {
+            if (filterdFlag) {
+                data = d3.csv.parse(contents);
+                parallelCoordinates(data, false);
+                parcoords.updateAxes();
+                filterdFlag = false;
+                document.getElementById("reset").style.display = "hidden";
+
+            }
+        }
+
+        function onClickTick() {
+            resetSelectedCountryAlphabet();
+            // console.log("This is the one clicked:", this.innerHTML, (/[\W\S_]/).test(this.innerHTML));
+            const innerLabel = this.innerHTML;
+            if ((/[\W\S_]/).test(innerLabel) && innerLabel.length == 1) {
+                data = d3.csv.parse(contents);
+                dataToFilter = data;
+                console.log("Filtered Data", dataToFilter.filter(d => d.Country === innerLabel));
+                parallelCoordinates(dataToFilter.filter(d => d.Country === innerLabel), true);
+                //  parcoords.reset(d => d.CountryName);
+                parcoords.updateAxes();
+                document.getElementById("reset").style.display = "block";
+                document.getElementById("reset").addEventListener("click", resetSelectedCountryAlphabet)
+                allTicks = document.querySelectorAll(".tick text");
+                for (var i = 0, max = allTicks.length; i < max; i++) {
+                    allTicks[i].addEventListener("click", onClickTick);
+                }
+                clicked_country = innerLabel;
+
+            }
+            //console.log("clicked", clicked_country);
+            //if(clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 3 && innerLabel.split("-")[1].length == 4) {
+            if (clicked_country && !!innerLabel && innerLabel.split("-").length >= 2 && innerLabel.split("-")[0].length == 4 && innerLabel.split("-")[1].length == 2) {
+                //console.log("clicked on date", innerLabel);
+                data = d3.csv.parse(contents);
+                dataToFilter = data;
+                //  console.log("Filtered Data", dataToFilter.filter(d => d.A_Date === innerLabel));
+                const country_filtered = dataToFilter.filter(d => d.Country === clicked_country) || [];
+                parallelCoordinates(country_filtered.filter(d => d.A_Date === innerLabel), true);
+                parcoords.updateAxes();
+                //on click evvent
+                document.getElementById("reset").style.display = "block";
+                document.getElementById("reset").addEventListener("click", resetSelectedDate)
+                allTicks = document.querySelectorAll(".tick text");
+                for (var i = 0, max = allTicks.length; i < max; i++) {
+                    allTicks[i].addEventListener("click", onClickTick);
+                }
+            }
+            filterdFlag = true;
+            console.log(document.getElementById("reset"));
+            document.getElementById("reset").style.display = "block";
+
+
+        }
+    };
+
+
+</script>
