@@ -123,6 +123,15 @@
             });
         });
     </script>
+    <input type="button" id="btnQueryRemove" value="Remove" />
+    <script type="text/javascript">
+        $(function () {
+            $("#btnQueryString").bind("click", function () {
+                var url = "SMain.html?list=" + encodeURIComponent($("#select_list").val()) + "&list1=" + encodeURIComponent($("#select_list1").val());
+                window.location.href = url;
+            });
+        });
+    </script>
 </form>
 <div id="example" class="parcoords" style="font-family: Big Caslon" ;>
 </div>
