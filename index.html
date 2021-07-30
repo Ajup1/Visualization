@@ -128,6 +128,15 @@
     <input type="text" id="textbox1" name="min">
     <input type="text" id="textbox2" name="Max">
     <input type="button" id="rescaleQuery" value="Rescale" onclick="rescaleFunction();" />
+  <label for="sltBrushMode">Brush mode:</label>
+  <select id="sltBrushMode">
+  </select>
+  <label id="lblPredicate" for="sltPredicate">Predicate:</label>
+  <select id="sltPredicate">
+    <option>AND</option>
+    <option>OR</option>
+  </select>
+  <button id="btnReset">Reset Brushes</button>
 
 </form>
 <div id="example" class="parcoords" style="font-family: Big Caslon" ;>
@@ -254,7 +263,29 @@
                     .brushMode("1D-axes");
 
             }
+var sltBrushMode = d3.select('#sltBrushMode')
 
+sltBrushMode.selectAll('option')
+  .data(parcoords.brushModes())
+  .enter()
+    .append('option')
+    .text(function(d) { return d; });
+
+sltBrushMode.on('change', function() {
+  parcoords.brushMode(this.value);
+  switch(this.value) {
+  case '2D-strums':
+    d3.select("#pStrums").style("visibility", "visible");
+    break;
+  }
+});
+
+sltBrushMode.property('value', '1D-axes');
+
+d3.select('#btnReset').on('click', function() {parcoords.brushReset();})
+d3.select('#sltPredicate').on('change', function() {
+  parcoords.brushPredicate(this.value);
+});
 
             // Color scale: give me a specie name, I return a color
             parcoords.color(function (d) {
