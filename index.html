@@ -41,27 +41,6 @@
         padding-left: 3px;
     }
 
-    /*#pager {
-      bottom: 106px;
-      height: 20px;
-    }*/
-    .slick-row:hover {
-        font-weight: bold;
-        color: #069;
-    }
-
-    #wrapper {
-        position: relative;
-        float: left;
-        top: 10px;
-        font-size: 1px;
-    }
-
-    #tooltip {
-        font-size: 7px;
-        font-weight: bold;
-        color: black;
-    }
 </style>
 <body>
 
@@ -91,47 +70,65 @@
 </script>
 
 <form>
-    <select name="list" value="alllist" id="select_list" onclick="myFunction();">
-    </select>
-    <select name="list2" value="alllist" id="select_row">
-    </select>
-    <select name="list1" id="select_list1" accesskey="target">
-    </select>
-
-
+    <select name="list" value="alllist" id="select_list" onclick="myFunction();"></select>
 
     <script>
-
-        function myFunction(){
+        //Remove Entire Axis
+        function myFunction(data){
             var ddl = document.getElementById("select_list");
-            console.log("this",ddl)
+
             var selectedValue = ddl.options[ddl.selectedIndex].value;
+            // console.log("this",selectedValue)
             if (selectedValue != " ")
             {
-                alert("Please select a card type");
+                console.log("Hide Axis",selectedValue);
+                d3.selectAll(".dimension")
+                    .filter(function(d) { return d == selectedValue; })
+                    .selectAll(".tick text")
+                    .remove();
             }
         };
+        function hideAxisFuction(data){
+            var ddl = document.getElementById("select_list");
+
+            var selectedValue = ddl.options[ddl.selectedIndex].value;
+            // console.log("this",selectedValue)
+            if (selectedValue != " ")
+            {
+                d3.selectAll(".dimension")
+                    .filter(function(d) { return d == selectedValue; })
+                    //.selectAll(".tick text")
+                    .remove();
+            }
+        };
+        function rescaleFunction(data)
+        {
+            var m = [30, 10, 10, 10],
+                w = 960 - m[1] - m[3],
+                h = 500 - m[0] - m[2];
+            var x = d3.scale.ordinal().rangePoints([0, w], 1),
+                y = {};
+            var ddl = document.getElementById("select_list");
+
+            var selectedValue = ddl.options[ddl.selectedIndex].value;
+            // Add an axis and title.
+            d3.selectAll(".dimension")
+                .attr("class", "axis")
+                .each(function(d) { d3.select(this).call(axis.scale(y[d])); })
+                .append("svg:text")
+                .attr("text-anchor", "middle")
+                .attr("y", -9)
+                .text(String);
+
+        }
     </script>
-<!--    <input type=button onClick="parent.location='Scatter.html'"-->
-<!--           value='click here for Scatter Plot'>-->
-    <input type="button" id="btnQueryString" value="Send" />
-    <script type="text/javascript">
-        $(function () {
-            $("#btnQueryString").bind("click", function () {
-                var url = "SMain.html?list=" + encodeURIComponent($("#select_list").val()) + "&list1=" + encodeURIComponent($("#select_list1").val());
-                window.location.href = url;
-            });
-        });
-    </script>
-    <input type="button" id="btnQueryRemove" value="Remove" />
-    <script type="text/javascript">
-        $(function () {
-            $("#btnQueryString").bind("click", function () {
-                var url = "SMain.html?list=" + encodeURIComponent($("#select_list").val()) + "&list1=" + encodeURIComponent($("#select_list1").val());
-                window.location.href = url;
-            });
-        });
-    </script>
+
+    <input type="button" id="removeAxisQuery" value="Remove Tick" onclick="myFunction();" />
+    <input type="button" id="hideAxisQuery" value="Hide Axis" onclick="hideAxisFuction();" />
+    <input type="text" id="textbox1" name="min">
+    <input type="text" id="textbox2" name="Max">
+    <input type="button" id="rescaleQuery" value="Rescale" onclick="rescaleFunction();" />
+
 </form>
 <div id="example" class="parcoords" style="font-family: Big Caslon" ;>
 </div>
@@ -214,6 +211,11 @@
                 right: 0,
                 bottom: 89
             });
+        // const zoom = d3.zoom().on("start", () => {
+        //     this.onScroll(d3.event.sourceEvent);
+        // });
+
+        // d3.select("#example").call(zoom);
 
         // add instruction text
         var instructions = "-Drag around axis to begin brush. -Click axis to clear brush. -Click a label to color data based on axis values. -Hover on each line to highlight."
@@ -250,6 +252,7 @@
                     .composite("darken")
                     .reorderable()
                     .brushMode("1D-axes");
+
             }
 
 
@@ -487,7 +490,7 @@
         var uploader = document.getElementById("uploader");
         var reader = new FileReader();
 
-      //  reader.readAsText(document.getElementById("uploader").files[0]);
+       //reader.readAsText(document.getElementById("uploader").files[0]);
 
         reader.onload = function (e) {
             contents = e.target.result;
@@ -502,19 +505,6 @@
                 opt.value = headers[i];
                 opt.innerHTML = headers[i];
                 select.appendChild(opt);
-
-            }
-
-
-            //
-            var select1 = document.getElementById('select_list1');
-            //console.log("this is the full data", select1);
-            for (var i = 0; i<=headers.length; i++) {
-                var opt1 = document.createElement('option');
-                opt1.value = headers[i];
-                //console.log("this is the full header", opt1.value);
-                opt1.innerHTML = headers[i];
-                select1.appendChild(opt1);
 
             }
 
