@@ -111,9 +111,25 @@
                 alert("Please select a card type");
             }
         };
+        
+         function showGridTableFunction()
+         {
+        var x = document.getElementById("grid");
+          if (x.style.display === "none") {
+            x.style.display = "block";
+             document.getElementById("showGridTable").value="Hide Grid";
+          } else {
+            x.style.display = "none";
+            document.getElementById("showGridTable").value="Show Grid";
+
+          }
+      //document.getElementById("showGridTable").style.display = "hidden";
+         }
     </script>
+    
 <!--    <input type=button onClick="parent.location='Scatter.html'"-->
 <!--           value='click here for Scatter Plot'>-->
+    <input type="button" id="showGridTable" value="Show Grid" onclick="showGridTableFunction();" style="display: true;" />
     <input type="button" id="btnQueryString" value="Send" />
     <script type="text/javascript">
         $(function () {
